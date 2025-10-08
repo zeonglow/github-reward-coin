@@ -1,6 +1,6 @@
 
   {
-      "name": "dashboard",
+      "name": "Manager and Developer Dashboards",
       "version": "0.1.0",
       "private": true,
       "dependencies": {
