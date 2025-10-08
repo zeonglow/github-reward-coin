@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "jsx": "react",
+    "target": "es6",
+    "module": "esnext",
+    "lib": ["dom", "es6"],
+    "skipLibCheck": true
+  },
+  "include": ["dashboard/src", "web/app"]
+}
