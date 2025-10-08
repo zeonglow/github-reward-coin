@@ -56,5 +56,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build"
+  },
+  "volta": {
+    "npm": "9.8.1",
+    "node": "20.19.2",
+    "yarn": "4.9.2"
   }
 }
