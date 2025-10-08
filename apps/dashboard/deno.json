@@ -1,0 +1,13 @@
+{
+  "imports": {
+    "npm:hono": "npm:hono@^4.0.0",
+    "npm:hono/cors": "npm:hono@^4.0.0/cors",
+    "npm:hono/logger": "npm:hono@^4.0.0/logger",
+    "jsr:@supabase/supabase-js": "jsr:@supabase/supabase-js@2.49.8"
+  },
+  "nodeModulesDir": "auto",
+  "tasks": {
+    "start": "deno run --allow-net --allow-env --allow-read --allow-write src/supabase/functions/server/index.tsx",
+    "dev": "deno run --allow-net --allow-env --allow-read --allow-write --watch src/supabase/functions/server/index.tsx"
+  }
+}

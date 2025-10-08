@@ -571,10 +571,34 @@ const DeveloperDashboard = () => {
 export default function App() {
   const [activeTab, setActiveTab] = useState("manager");
 
+  // Handle OAuth callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const githubConnected = urlParams.get("github_connected");
+    const githubError = urlParams.get("github_error");
+
+    if (githubConnected === "true") {
+      toast.success("GitHub account connected successfully!", {
+        duration: 3000,
+      });
+      setActiveTab("developer");
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (githubError) {
+      toast.error(
+        `GitHub connection failed: ${decodeURIComponent(githubError)}`,
+        { duration: 5000 },
+      );
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   const handleConnectGithub = () => {
-    // Simulate GitHub connection
-    setActiveTab("developer");
-    toast.success("GitHub account connected successfully!", { duration: 3000 });
+    // Redirect to server-side GitHub OAuth endpoint
+    const serverUrl =
+      (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:3000";
+    window.location.href = `${serverUrl}/connect/github`;
   };
 
   return (

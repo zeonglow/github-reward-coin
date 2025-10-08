@@ -1,7 +1,14 @@
 import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
 import { logger } from "npm:hono/logger";
+import { createClient } from "jsr:@supabase/supabase-js@2.49.8";
 import * as kv from "./kv_store.tsx";
+
+// Initialize Supabase client
+const supabase = createClient(
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+);
 const app = new Hono();
 
 // Enable logger
@@ -118,7 +125,7 @@ app.get("/connect/github/callback", async (c) => {
 
     // For now, we'll use a placeholder user ID
     // In a real app, you'd identify the current user from session/auth
-    const userId = "placeholder-user-id"; // TODO: Get actual user ID from auth
+    const userId = `${githubUser.login}${githubUser.id}`;
 
     // Save to Supabase
     const { error: dbError } = await supabase.from("users").upsert({

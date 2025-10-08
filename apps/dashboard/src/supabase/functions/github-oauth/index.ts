@@ -130,7 +130,7 @@ serve(async (req) => {
 
       // For now, we'll use a placeholder user ID
       // In a real app, you'd identify the current user from session/auth
-      const userId = "placeholder-user-id"; // TODO: Get actual user ID from auth
+      const userId = `${githubUser.login}${githubUser.id}`;
 
       // Save to Supabase
       const { error: dbError } = await supabase.from("users").upsert({
