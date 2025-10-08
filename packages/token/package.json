@@ -5,8 +5,9 @@
   "description": "A simple hello-world ERC-20 token",
   "main": "index.js",
   "scripts": {
+    "build": "hardhat build",
     "test": "hardhat test",
-    "deploy:verify": "hardhat verify --build-profile production --network sepolia --constructor-args-path test/CodeKudos.args.ts 0x7cC3806D983DB4A0684E57b06C9927cA3a596103",
+    "deploy:verify": "hardhat verify --build-profile production --network sepolia --constructor-args-path scripts/CodeKudos.args.ts 0x7cC3806D983DB4A0684E57b06C9927cA3a596103",
     "deploy:mainnet": "hardhat run --build-profile=production scripts/deploy.ts --network mainnet",
     "deploy:sepolia": "hardhat run --build-profile=production scripts/deploy.ts --network sepolia"
   },
