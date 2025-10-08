@@ -591,20 +591,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jsr/supabase__supabase-js@npm:^2.49.8":
-  version: 2.58.0
-  resolution: "@jsr/supabase__supabase-js@npm:2.58.0::__archiveUrl=https%3A%2F%2Fnpm.jsr.io%2F~%2F11%2F%40jsr%2Fsupabase__supabase-js%2F2.58.0.tgz"
-  dependencies:
-    "@supabase/auth-js": "npm:2.72.0"
-    "@supabase/functions-js": "npm:2.5.0"
-    "@supabase/node-fetch": "npm:2.6.15"
-    "@supabase/postgrest-js": "npm:1.21.4"
-    "@supabase/realtime-js": "npm:2.15.5"
-    "@supabase/storage-js": "npm:2.12.2"
-  checksum: 10c0/cd5b12f4e021d31ff73d4ca54400e5fa99689475a63b294274aaa77344a18c05f2b00061f5171f40a012655546233d0bcc0ac98e322f6808acf40262a1759352
-  languageName: node
-  linkType: hard
-
 "@next/env@npm:15.5.4":
   version: 15.5.4
   resolution: "@next/env@npm:15.5.4"
@@ -2075,30 +2061,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@supabase/auth-js@npm:2.72.0":
-  version: 2.72.0
-  resolution: "@supabase/auth-js@npm:2.72.0"
-  dependencies:
-    "@supabase/node-fetch": "npm:^2.6.14"
-  checksum: 10c0/744abb80a75fa93930754894c32c56f86352c877057bdd71cc943ca016922bcde14515bb5c19cac3b36403d010566205e6995cbe97044008c8ccbceeee9c3d97
-  languageName: node
-  linkType: hard
-
 "@supabase/auth-js@npm:2.74.0":
   version: 2.74.0
   resolution: "@supabase/auth-js@npm:2.74.0"
   dependencies:
     "@supabase/node-fetch": "npm:2.6.15"
   checksum: 10c0/b2677a00fcd16b4ccc9d9c33834a6df3e61e49d085a1326d358f8ffdb6aa31bf9cbf400194faaf0e743ae4c38d58bfa8e742e56c875e55ba644d7518d1d7183a
-  languageName: node
-  linkType: hard
-
-"@supabase/functions-js@npm:2.5.0":
-  version: 2.5.0
-  resolution: "@supabase/functions-js@npm:2.5.0"
-  dependencies:
-    "@supabase/node-fetch": "npm:^2.6.14"
-  checksum: 10c0/499e31838da8aa8a41c7351fe4e3ffd9649a21dd2da27e7a45b6d0b64da92d7d81067239d481bfcbbdebcbafecf13d653aaa79b16fae93cf897981d9d2bc0ef4
   languageName: node
   linkType: hard
 
@@ -2111,21 +2079,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@supabase/node-fetch@npm:2.6.15, @supabase/node-fetch@npm:^2.6.13, @supabase/node-fetch@npm:^2.6.14":
+"@supabase/node-fetch@npm:2.6.15":
   version: 2.6.15
   resolution: "@supabase/node-fetch@npm:2.6.15"
   dependencies:
     whatwg-url: "npm:^5.0.0"
   checksum: 10c0/98d25cab2eba53c93c59e730d52d50065b1a7fe216c65224471e83e2064ebd45ae51ad09cb39ec263c3cb59e3d41870fc2e789ea2e9587480d7ba212b85daf38
-  languageName: node
-  linkType: hard
-
-"@supabase/postgrest-js@npm:1.21.4":
-  version: 1.21.4
-  resolution: "@supabase/postgrest-js@npm:1.21.4"
-  dependencies:
-    "@supabase/node-fetch": "npm:^2.6.14"
-  checksum: 10c0/9efa19a3b56c780c63b7caebca084f8c67750349f882c3221c5547153baaa4010b736d4fdd9a024ebdf117eab7de17770fecb698b39210f9903777522d9a7bff
   languageName: node
   linkType: hard
 
@@ -2138,18 +2097,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@supabase/realtime-js@npm:2.15.5":
-  version: 2.15.5
-  resolution: "@supabase/realtime-js@npm:2.15.5"
-  dependencies:
-    "@supabase/node-fetch": "npm:^2.6.13"
-    "@types/phoenix": "npm:^1.6.6"
-    "@types/ws": "npm:^8.18.1"
-    ws: "npm:^8.18.2"
-  checksum: 10c0/df8946a54a10dc1cca6f697d41617ea19c60932dfa881a789e27e9d129851e5c84776f055206bc7753c1633667fc38ee4fc407ab769208a6d0e56d5d6fbe8322
-  languageName: node
-  linkType: hard
-
 "@supabase/realtime-js@npm:2.74.0":
   version: 2.74.0
   resolution: "@supabase/realtime-js@npm:2.74.0"
@@ -2159,15 +2106,6 @@ __metadata:
     "@types/ws": "npm:^8.18.1"
     ws: "npm:^8.18.2"
   checksum: 10c0/5a271ccec9f39e6a03abec0c356628896c4bd3eba56a3bcb02a50408a64b2d20cc2973912ea10cef709994f5cbb0fbc00166bdf5384c7847bf02ccc272fe86a9
-  languageName: node
-  linkType: hard
-
-"@supabase/storage-js@npm:2.12.2":
-  version: 2.12.2
-  resolution: "@supabase/storage-js@npm:2.12.2"
-  dependencies:
-    "@supabase/node-fetch": "npm:^2.6.14"
-  checksum: 10c0/f8c1194bba17d839c663b9d114c5d9e74bb55cbbc52f62f87edebb908e9c3f241d900a0fa4bd16b13c9cbbfe9bbe602c77917e13f6628216572be4ba7474849e
   languageName: node
   linkType: hard
 
@@ -3127,7 +3065,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "dashboard@workspace:apps/dashboard"
   dependencies:
-    "@jsr/supabase__supabase-js": "npm:^2.49.8"
     "@radix-ui/react-accordion": "npm:^1.2.3"
     "@radix-ui/react-alert-dialog": "npm:^1.1.6"
     "@radix-ui/react-aspect-ratio": "npm:^1.1.2"
