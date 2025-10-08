@@ -26,6 +26,7 @@ import {
 } from "./components/ui/select";
 import { Separator } from "./components/ui/separator";
 import { toast } from "sonner";
+import { Toaster } from "./components/ui/sonner";
 import {
   CheckCircle,
   Clock,
@@ -573,7 +574,7 @@ export default function App() {
   const handleConnectGithub = () => {
     // Simulate GitHub connection
     setActiveTab("developer");
-    toast.success("GitHub account connected successfully!");
+    toast.success("GitHub account connected successfully!", { duration: 3000 });
   };
 
   return (
@@ -601,6 +602,7 @@ export default function App() {
           <UnconnectedView onConnect={handleConnectGithub} />
         )}
       </div>
+      <Toaster />
     </div>
   );
 }
