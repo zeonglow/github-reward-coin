@@ -1,7 +1,7 @@
-# GITHUB-REWARD-COIN
+# github-reward-coin
 
-## Josua's winning Hackathon Project
----
+Josua Coin Reward project for Bookipi Q4 2025 Hackathon
+
 ### Team Members
 
 - Josua Leonard Halomoan ( Project Lead )
@@ -9,8 +9,6 @@
 - Kriangga Wicaksana / AKA "Ingga"
 - Francis Jed Guipo / AKA "Jed"
 - Christopher Huang-Leaver / "Chris"
-
-
 
 ---
 
