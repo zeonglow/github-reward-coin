@@ -5,7 +5,7 @@
   "description": "A simple hello-world ERC-20 token",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "hardhat test"
   },
   "repository": {
     "type": "git",
