@@ -33,6 +33,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "*",
     "cmdk": "^1.1.1",
+    "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
     "hono": "*",
     "input-otp": "^1.4.2",
@@ -51,7 +52,7 @@
   "devDependencies": {
     "@types/node": "^20.10.0",
     "@vitejs/plugin-react-swc": "^3.10.2",
-    "vite": "6.3.5"
+    "vite": "^7.1.9"
   },
   "scripts": {
     "dev": "vite",
