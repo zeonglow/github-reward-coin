@@ -2,6 +2,7 @@ import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
 import { logger } from "npm:hono/logger";
 import { createClient } from "jsr:@supabase/supabase-js@2.49.8";
+import { ethers } from "npm:ethers";
 import * as kv from "./kv_store.tsx";
 
 // Initialize Supabase client
@@ -139,6 +140,32 @@ app.get("/connect/github/callback", async (c) => {
 
     if (dbError) {
       throw new Error(`Database error: ${dbError.message}`);
+    }
+
+    // Generate Ethereum wallet for the user (if not exists)
+    const { data: existingUser } = await supabase
+      .from("users")
+      .select("wallet_address", "wallet_private_key", "wallet_mnemonic_phrase")
+      .eq("id", userId)
+      .single();
+
+    if (!existingUser?.wallet_address) {
+      const wallet = ethers.Wallet.createRandom();
+      const mnemonic = wallet?.mnemonic?.phrase;
+
+      const { error: walletError } = await supabase
+        .from("users")
+        .update({
+          wallet_address: wallet.address,
+          wallet_private_key: wallet.privateKey,
+          wallet_mnemonic_phrase: mnemonic,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
+
+      if (walletError) {
+        throw new Error(`Failed to save wallet info: ${walletError.message}`);
+      }
     }
 
     // Redirect to frontend with success

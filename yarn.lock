@@ -4136,6 +4136,7 @@ __metadata:
     cmdk: "npm:^1.1.1"
     date-fns: "npm:^4.1.0"
     embla-carousel-react: "npm:^8.6.0"
+    ethers: "npm:^6.15.0"
     hono: "npm:*"
     input-otp: "npm:^1.4.2"
     lucide-react: "npm:^0.487.0"

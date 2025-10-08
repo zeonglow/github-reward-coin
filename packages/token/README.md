@@ -6,7 +6,6 @@
 
 Utilities for creating and performing operations on the "KUDOS" coin
 
-
 ### Getting Started:
 
 - Example `.env` file
@@ -27,23 +26,25 @@ ETHERSCAN_API_KEY=1SUJ...
 
 #### More detailed instructions
 
-Etherscan and Alchemy are simple enough,  there is no need to pay any money.
+Etherscan and Alchemy are simple enough, there is no need to pay any money.
 
 #### Metamask
+
 Setting up Metamask is also simple, but you must enable 'test networks' first.
 
 Hamburger icon in top right -> Settings -> "Show Test Networks"
 Network drop down menu ( top left of wallet ) -> select "Sepolia" ( under "testnets")
 
 ### CodeKudosToken
- - Sepolia Network (testnet) https://sepolia.etherscan.io/address/0xfaB0FCc1C301B187973eDEed298104e323fb3bfb
- - Mainnet:  (Not yet deployed)
+
+- Sepolia Network (testnet) https://sepolia.etherscan.io/address/0xfaB0FCc1C301B187973eDEed298104e323fb3bfb
+- Mainnet: (Not yet deployed)
 
 ### Usage
 
 **WARNING**
 
-The following will create *brand new* tokens with exactly the same name and ticker symbol!
+The following will create _brand new_ tokens with exactly the same name and ticker symbol!
 
 - yarn deploy:sepolia
 - yarn deploy:mainnet
