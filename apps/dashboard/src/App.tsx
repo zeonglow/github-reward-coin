@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -8,12 +8,7 @@ import {
 } from "./components/ui/card";
 import { Badge } from "./components/ui/badge";
 import { Button } from "./components/ui/button";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "./components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -30,7 +25,8 @@ import {
   SelectValue,
 } from "./components/ui/select";
 import { Separator } from "./components/ui/separator";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
+import { Toaster } from "./components/ui/sonner";
 import {
   CheckCircle,
   Clock,
@@ -188,9 +184,7 @@ const getStatusBadge = (reward: any) => {
 const RewardCard = ({ reward, onApprove, userRole }: any) => {
   const canApprove =
     (userRole === "manager" && !reward.managerApproval) ||
-    (userRole === "hr" &&
-      reward.managerApproval &&
-      !reward.hrApproval);
+    (userRole === "hr" && reward.managerApproval && !reward.hrApproval);
 
   return (
     <Card className="mb-4">
@@ -202,41 +196,36 @@ const RewardCard = ({ reward, onApprove, userRole }: any) => {
               {getStatusBadge(reward)}
             </CardTitle>
             <CardDescription>
-              Period: {reward.period} • Wallet:{" "}
-              {reward.developerWallet}
+              Period: {reward.period} • Wallet: {reward.developerWallet}
             </CardDescription>
           </div>
           <div className="text-right">
             <div className="font-semibold text-2xl text-blue-600">
               {reward.totalTokens} CKC
             </div>
-            <div className="text-sm text-gray-500">
-              Total Reward
-            </div>
+            <div className="text-sm text-gray-500">Total Reward</div>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {reward.activities.map(
-              (activity: any, index: number) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-2 p-2 bg-gray-50 rounded"
-                >
-                  {getActivityIcon(activity.type)}
-                  <div>
-                    <div className="font-medium">
-                      {activity.count} {activity.type}s
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {activity.points} points • {activity.repo}
-                    </div>
+            {reward.activities.map((activity: any, index: number) => (
+              <div
+                key={index}
+                className="flex items-center gap-2 p-2 bg-gray-50 rounded"
+              >
+                {getActivityIcon(activity.type)}
+                <div>
+                  <div className="font-medium">
+                    {activity.count} {activity.type}s
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {activity.points} points • {activity.repo}
                   </div>
                 </div>
-              ),
-            )}
+              </div>
+            ))}
           </div>
 
           <Separator />
@@ -251,9 +240,7 @@ const RewardCard = ({ reward, onApprove, userRole }: any) => {
                 )}
                 <span
                   className={
-                    reward.managerApproval
-                      ? "text-green-600"
-                      : "text-gray-500"
+                    reward.managerApproval ? "text-green-600" : "text-gray-500"
                   }
                 >
                   Manager Approval
@@ -267,9 +254,7 @@ const RewardCard = ({ reward, onApprove, userRole }: any) => {
                 )}
                 <span
                   className={
-                    reward.hrApproval
-                      ? "text-green-600"
-                      : "text-gray-500"
+                    reward.hrApproval ? "text-green-600" : "text-gray-500"
                   }
                 >
                   HR Approval
@@ -282,8 +267,7 @@ const RewardCard = ({ reward, onApprove, userRole }: any) => {
                 onClick={() => onApprove(reward.id, userRole)}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                Approve (
-                {userRole === "manager" ? "Manager" : "HR"})
+                Approve ({userRole === "manager" ? "Manager" : "HR"})
               </Button>
             )}
           </div>
@@ -304,9 +288,7 @@ const ManagerDashboard = () => {
         reward.id === rewardId
           ? {
               ...reward,
-              [role === "manager"
-                ? "managerApproval"
-                : "hrApproval"]: true,
+              [role === "manager" ? "managerApproval" : "hrApproval"]: true,
             }
           : reward,
       ),
@@ -317,8 +299,7 @@ const ManagerDashboard = () => {
   };
 
   const filteredRewards = rewards.filter((reward) => {
-    if (filterStatus === "pending-manager")
-      return !reward.managerApproval;
+    if (filterStatus === "pending-manager") return !reward.managerApproval;
     if (filterStatus === "pending-hr")
       return reward.managerApproval && !reward.hrApproval;
     if (filterStatus === "approved") return reward.hrApproval;
@@ -327,23 +308,16 @@ const ManagerDashboard = () => {
 
   const stats = {
     totalPending: rewards.filter((r) => !r.hrApproval).length,
-    totalTokens: rewards.reduce(
-      (sum, r) => sum + r.totalTokens,
-      0,
-    ),
-    activeDevelopers: new Set(rewards.map((r) => r.developerId))
-      .size,
-    completedThisMonth: rewards.filter((r) => r.hrApproval)
-      .length,
+    totalTokens: rewards.reduce((sum, r) => sum + r.totalTokens, 0),
+    activeDevelopers: new Set(rewards.map((r) => r.developerId)).size,
+    completedThisMonth: rewards.filter((r) => r.hrApproval).length,
   };
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">
-            Manager Dashboard
-          </h1>
+          <h1 className="text-3xl font-bold">Manager Dashboard</h1>
           <p className="text-gray-600">
             CodeKudos Coin (CKC) Reward Management
           </p>
@@ -366,12 +340,8 @@ const ManagerDashboard = () => {
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5 text-orange-500" />
               <div>
-                <div className="text-2xl font-bold">
-                  {stats.totalPending}
-                </div>
-                <div className="text-sm text-gray-500">
-                  Pending Approvals
-                </div>
+                <div className="text-2xl font-bold">{stats.totalPending}</div>
+                <div className="text-sm text-gray-500">Pending Approvals</div>
               </div>
             </div>
           </CardContent>
@@ -384,9 +354,7 @@ const ManagerDashboard = () => {
                 <div className="text-2xl font-bold">
                   {stats.totalTokens.toLocaleString()}
                 </div>
-                <div className="text-sm text-gray-500">
-                  Total CKC Tokens
-                </div>
+                <div className="text-sm text-gray-500">Total CKC Tokens</div>
               </div>
             </div>
           </CardContent>
@@ -399,9 +367,7 @@ const ManagerDashboard = () => {
                 <div className="text-2xl font-bold">
                   {stats.activeDevelopers}
                 </div>
-                <div className="text-sm text-gray-500">
-                  Active Developers
-                </div>
+                <div className="text-sm text-gray-500">Active Developers</div>
               </div>
             </div>
           </CardContent>
@@ -425,21 +391,14 @@ const ManagerDashboard = () => {
 
       {/* Filter Controls */}
       <div className="flex gap-2">
-        <Select
-          value={filterStatus}
-          onValueChange={setFilterStatus}
-        >
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-48">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Rewards</SelectItem>
-            <SelectItem value="pending-manager">
-              Pending Manager
-            </SelectItem>
-            <SelectItem value="pending-hr">
-              Pending HR
-            </SelectItem>
+            <SelectItem value="pending-manager">Pending Manager</SelectItem>
+            <SelectItem value="pending-hr">Pending HR</SelectItem>
             <SelectItem value="approved">Approved</SelectItem>
           </SelectContent>
         </Select>
@@ -491,21 +450,13 @@ const DeveloperDashboard = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">
-            Developer Dashboard
-          </h1>
-          <p className="text-gray-600">
-            Your CodeKudos Coin (CKC) Rewards
-          </p>
+          <h1 className="text-3xl font-bold">Developer Dashboard</h1>
+          <p className="text-gray-600">Your CodeKudos Coin (CKC) Rewards</p>
         </div>
         <div className="flex items-center gap-2">
           <Wallet className="w-5 h-5" />
           <span className="font-mono">{walletAddress}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={copyWallet}
-          >
+          <Button variant="outline" size="sm" onClick={copyWallet}>
             <Copy className="w-4 h-4" />
           </Button>
         </div>
@@ -521,9 +472,7 @@ const DeveloperDashboard = () => {
                 <div className="text-2xl font-bold">
                   {totalRewards.toLocaleString()}
                 </div>
-                <div className="text-sm text-gray-500">
-                  Total CKC Earned
-                </div>
+                <div className="text-sm text-gray-500">Total CKC Earned</div>
               </div>
             </div>
           </CardContent>
@@ -536,9 +485,7 @@ const DeveloperDashboard = () => {
                 <div className="text-2xl font-bold">
                   {pendingRewards.toLocaleString()}
                 </div>
-                <div className="text-sm text-gray-500">
-                  Pending CKC
-                </div>
+                <div className="text-sm text-gray-500">Pending CKC</div>
               </div>
             </div>
           </CardContent>
@@ -551,9 +498,7 @@ const DeveloperDashboard = () => {
                 <div className="text-2xl font-bold">
                   {developerRewards.length}
                 </div>
-                <div className="text-sm text-gray-500">
-                  Total Rewards
-                </div>
+                <div className="text-sm text-gray-500">Total Rewards</div>
               </div>
             </div>
           </CardContent>
@@ -582,22 +527,18 @@ const DeveloperDashboard = () => {
             <TableBody>
               {developerRewards.map((reward) => (
                 <TableRow key={reward.id}>
-                  <TableCell className="font-medium">
-                    {reward.period}
-                  </TableCell>
+                  <TableCell className="font-medium">{reward.period}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {reward.activities.map(
-                        (activity, index) => (
-                          <Badge
-                            key={index}
-                            variant="outline"
-                            className="text-xs"
-                          >
-                            {activity}
-                          </Badge>
-                        ),
-                      )}
+                      {reward.activities.map((activity, index) => (
+                        <Badge
+                          key={index}
+                          variant="outline"
+                          className="text-xs"
+                        >
+                          {activity}
+                        </Badge>
+                      ))}
                     </div>
                   </TableCell>
                   <TableCell className="font-bold text-blue-600">
@@ -606,14 +547,10 @@ const DeveloperDashboard = () => {
                   <TableCell>
                     <Badge
                       variant={
-                        reward.status === "completed"
-                          ? "default"
-                          : "secondary"
+                        reward.status === "completed" ? "default" : "secondary"
                       }
                     >
-                      {reward.status === "completed"
-                        ? "Completed"
-                        : "Pending"}
+                      {reward.status === "completed" ? "Completed" : "Pending"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-gray-500">
@@ -634,10 +571,34 @@ const DeveloperDashboard = () => {
 export default function App() {
   const [activeTab, setActiveTab] = useState("manager");
 
+  // Handle OAuth callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const githubConnected = urlParams.get("github_connected");
+    const githubError = urlParams.get("github_error");
+
+    if (githubConnected === "true") {
+      toast.success("GitHub account connected successfully!", {
+        duration: 3000,
+      });
+      setActiveTab("developer");
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (githubError) {
+      toast.error(
+        `GitHub connection failed: ${decodeURIComponent(githubError)}`,
+        { duration: 5000 },
+      );
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   const handleConnectGithub = () => {
-    // Simulate GitHub connection
-    setActiveTab("developer");
-    toast.success("GitHub account connected successfully!");
+    // Redirect to server-side GitHub OAuth endpoint
+    const serverUrl =
+      (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:3000";
+    window.location.href = `${serverUrl}/connect/github`;
   };
 
   return (
@@ -650,15 +611,9 @@ export default function App() {
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-3 max-w-2xl">
-              <TabsTrigger value="manager">
-                Manager View
-              </TabsTrigger>
-              <TabsTrigger value="developer">
-                Developer View
-              </TabsTrigger>
-              <TabsTrigger value="unconnected">
-                Unconnected View
-              </TabsTrigger>
+              <TabsTrigger value="manager">Manager View</TabsTrigger>
+              <TabsTrigger value="developer">Developer View</TabsTrigger>
+              <TabsTrigger value="unconnected">Unconnected View</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -671,6 +626,7 @@ export default function App() {
           <UnconnectedView onConnect={handleConnectGithub} />
         )}
       </div>
+      <Toaster />
     </div>
   );
 }
