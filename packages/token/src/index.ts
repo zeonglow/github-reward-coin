@@ -2,7 +2,7 @@ import express from "express";
 import type { TransactionRequest } from "./types.js";
 import { TransactionRequestSchema } from "./types.js";
 import { giveReward } from "./rewards.js";
-export { giveReward } from "./rewards.js";
+export * from "./rewards.js";
 
 const app = express();
 const PORT = process.env.PORT || 8888;
