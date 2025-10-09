@@ -56,7 +56,6 @@ export function DeveloperDashboard({
   // Load wallet address from localStorage on mount
   useEffect(() => {
     const storedWalletAddress = localStorage.getItem("wallet_address");
-    console.log(storedWalletAddress);
     if (storedWalletAddress) {
       setWalletAddress(storedWalletAddress);
     }
@@ -71,7 +70,6 @@ export function DeveloperDashboard({
       try {
         // Use the format `${githubUsername}${githubId}` as developerId
         const developerId = `${githubUsername}${githubId}`;
-        console.log("Developer ID:", developerId);
 
         if (!walletAddress) {
           // Fetch user's wallet address from users table
@@ -102,8 +100,6 @@ export function DeveloperDashboard({
           .eq("developerId", developerId)
           .order("createdAt", { ascending: false });
 
-        console.log("User rewards data:", rewardsData);
-
         if (rewardsError) {
           console.error("Error fetching user rewards:", rewardsError);
         } else {
@@ -122,11 +118,18 @@ export function DeveloperDashboard({
     }
   }, [githubId, githubUsername]);
 
-  const totalRewards = developerRewards
-    .filter((r) => r.status === "distributed")
-    .reduce((sum, r) => sum + r.totalTokens, 0);
-  const pendingRewards = developerRewards
-    .filter((r) => r.status === "pending")
+  const earnedRewards = developerRewards.filter(
+    (r) => r.status === "distributed",
+  );
+  const approvedRewards = developerRewards.filter(
+    (r) => r.status === "fully_approved",
+  );
+  const totalKCKRewards = earnedRewards.reduce(
+    (sum, r) => sum + r.totalTokens,
+    0,
+  );
+  const pendingKCKRewards = developerRewards
+    .filter((r) => r.status === "pending" || r.status === "manager_approved")
     .reduce((sum, r) => sum + r.totalTokens, 0);
 
   const copyWallet = () => {
@@ -229,14 +232,14 @@ export function DeveloperDashboard({
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <Trophy className="w-5 h-5 text-yellow-500" />
               <div>
                 <div className="text-2xl font-bold">
-                  {totalRewards.toLocaleString()}
+                  {totalKCKRewards.toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-500">Total CKC Earned</div>
               </div>
@@ -249,9 +252,22 @@ export function DeveloperDashboard({
               <Clock className="w-5 h-5 text-orange-500" />
               <div>
                 <div className="text-2xl font-bold">
-                  {pendingRewards.toLocaleString()}
+                  {pendingKCKRewards.toLocaleString()}
                 </div>
                 <div className="text-sm text-gray-500">Pending CKC</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-green-500" />
+              <div>
+                <div className="text-2xl font-bold">
+                  {earnedRewards.length} / {approvedRewards.length}
+                </div>
+                <div className="text-sm text-gray-500">Earned / Approved</div>
               </div>
             </div>
           </CardContent>
@@ -336,10 +352,26 @@ export function DeveloperDashboard({
                             ? "default"
                             : "secondary"
                         }
+                        className={
+                          reward.status === "distributed"
+                            ? "bg-green-500"
+                            : reward.status === "fully_approved"
+                              ? "bg-blue-600 text-white"
+                              : ""
+                        }
                       >
-                        {reward.status === "distributed"
-                          ? "Completed"
-                          : "Pending"}
+                        {reward.status === "distributed" ? (
+                          "Completed"
+                        ) : reward.status === "manager_approved" ? (
+                          <span>
+                            Manager &#10003; HR{" "}
+                            <Clock className="inline w-4 h-4 ml-1" />
+                          </span>
+                        ) : reward.status === "fully_approved" ? (
+                          <span>Approved</span>
+                        ) : (
+                          "Pending"
+                        )}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-gray-500">
