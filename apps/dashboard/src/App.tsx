@@ -41,6 +41,15 @@ import {
   DollarSign,
   Target,
 } from "lucide-react";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "./components/ui/pagination";
 import { UnconnectedView } from "./components/UnconnectedView";
 import { Reward } from "./types/reward";
 // @ts-expect-error - NPM imports in Deno not fully supported by TypeScript
@@ -135,6 +144,8 @@ const RewardCard = ({reward, onApprove, userRole}: any) => {
     setApproving(false);
   }
 
+  const walletAddress = reward.developer?.walletAddress;
+
   return (
     <Card className="mb-4">
       <CardHeader>
@@ -145,7 +156,7 @@ const RewardCard = ({reward, onApprove, userRole}: any) => {
               {getStatusBadge(reward)}
             </CardTitle>
             <CardDescription>
-              Period: {reward.period} • Wallet: {reward.developer.walletAddress}
+              Period: {reward.period} • Wallet: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
             </CardDescription>
           </div>
           <div className="text-right">
@@ -236,6 +247,8 @@ const ManagerDashboard = () => {
   const [rewards, setRewards] = useState([]);
   const [userRole, setUserRole] = useState<"manager" | "hr">("manager");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   useEffect(() => {
     supabase
@@ -296,6 +309,17 @@ const ManagerDashboard = () => {
     activeDevelopers: new Set(rewards.map((r) => r.developerId)).size,
     completedThisMonth: rewards.filter((r) => r.status === 'fully_approved').length,
   };
+
+  // Reset to page 1 when filter changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredRewards.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedRewards = filteredRewards.slice(startIndex, endIndex);
 
   return (
     <div className="p-6 space-y-6">
@@ -400,14 +424,53 @@ const ManagerDashboard = () => {
             </CardContent>
           </Card>
         ) : (
-          filteredRewards.map((reward) => (
-            <RewardCard
-              key={`${reward.id}-${reward.status}`}
-              reward={reward}
-              onApprove={handleApprove}
-              userRole={userRole}
-            />
-          ))
+          <>
+            {paginatedRewards.map((reward) => (
+              <RewardCard
+                key={reward.id}
+                reward={reward}
+                onApprove={handleApprove}
+                userRole={userRole}
+              />
+            ))}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-6">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        size='default' />
+                    </PaginationItem>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(page)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                          size="icon"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        size='default'
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
