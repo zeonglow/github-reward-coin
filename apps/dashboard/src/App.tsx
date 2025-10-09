@@ -49,6 +49,7 @@ import { Reward } from "./types/reward";
 import { createClient } from "@jsr/supabase__supabase-js";
 import * as supabaseInfo from "./utils/supabase/info";
 import { faker } from "@faker-js/faker";
+import { getTimeAgo } from "./utils/time";
 
 // Create a single supabase client for interacting with your database
 const supabase = createClient(
@@ -100,22 +101,6 @@ const getStatusBadge = (reward: any) => {
   }
 };
 
-// Utility function to format date as "time ago"
-const getTimeAgo = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diffInSeconds < 60) return "just now";
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-  if (diffInSeconds < 2592000)
-    return `${Math.floor(diffInSeconds / 86400)}d ago`;
-  if (diffInSeconds < 31536000)
-    return `${Math.floor(diffInSeconds / 2592000)}mo ago`;
-  return `${Math.floor(diffInSeconds / 31536000)}y ago`;
-};
-
 const RewardCard = ({ reward, onApprove, userRole }: any) => {
   const [approving, setApproving] = useState(false);
   const canApprove =
@@ -148,7 +133,7 @@ const RewardCard = ({ reward, onApprove, userRole }: any) => {
               <span>{getTimeAgo(reward.createdAt.toString())}</span>
             </CardTitle>
             <CardDescription>
-              Period:
+              Period:{" "}
               {new Date(reward.createdAt).toLocaleDateString("en-US", {
                 month: "long",
                 year: "numeric",
@@ -949,7 +934,7 @@ export default function App() {
           <div className="header-content">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold text-gray-900">
-                GitHub Reward
+                GitHub Commit Reward Token
               </h1>
               <div className="flex items-center gap-4">
                 {isLoading ? (

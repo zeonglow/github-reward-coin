@@ -27,6 +27,7 @@ import {
   Activity,
 } from "lucide-react";
 import { motion } from "motion/react";
+import { getTimeAgo } from "../utils/time";
 
 type LiveStreamProps = {
   supabase: any;
@@ -79,27 +80,6 @@ const formatTimestamp = (timestamp: string) => {
   });
 };
 
-const getActivityStatus = (events: any[]) => {
-  if (events.length === 0) return { text: "No activity", progress: 0 };
-
-  const lastEvent = events[events.length - 1];
-
-  switch (lastEvent.type) {
-    case "commit":
-      return { text: `Working on ${lastEvent.repo}...`, progress: 20 };
-    case "manager_approval":
-      return { text: "Awaiting HR approval...", progress: 50 };
-    case "hr_approval":
-      return { text: "Processing token distribution...", progress: 75 };
-    case "distribution":
-      return { text: "Finalizing reward cycle...", progress: 90 };
-    case "completed":
-      return { text: "All rewards processed ✓", progress: 100 };
-    default:
-      return { text: "Processing...", progress: 10 };
-  }
-};
-
 export function LiveStream({
   supabase,
   developers,
@@ -108,9 +88,89 @@ export function LiveStream({
 }: LiveStreamProps) {
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [timeFilter, setTimeFilter] = useState("now");
   const [rewards, setRewards] = useState([]);
   const [liveEvents, setLiveEvents] = useState([]);
+
+  useEffect(() => {
+    supabase
+      .channel("schema-db-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "rewards",
+        },
+        (payload) => {
+          console.log("payload", payload);
+          if (
+            (payload.eventType === "UPDATE" ||
+              payload.eventType === "INSERT") &&
+            payload.new?.developerId === liveStreamUser
+          ) {
+            const lastLiveEvent = liveEvents[0];
+            const statusChanged =
+              lastLiveEvent && lastLiveEvent?.status !== payload.new?.status;
+            const managerApproval =
+              lastLiveEvent &&
+              lastLiveEvent?.managerApproval === false &&
+              payload.new?.managerApproval?.approved === true;
+
+            let message =
+              payload.new.createdAt === payload.new.updatedAt
+                ? "Commit made"
+                : "";
+            let type = "commit";
+            if (statusChanged) {
+              message = "Status changed to " + payload.new?.status;
+              if (payload.new?.status === "fully_approved") {
+                type = "distribution";
+                message = `HR approved this commit. ${payload.new?.totalTokens} CKC being distributed to your wallet!`;
+              }
+              if (payload.new?.status === "distributed") {
+                type = "completed";
+                message = "Reward cycle completed!";
+              }
+            }
+            if (managerApproval) {
+              message = "Manager approved this commit";
+              type = "manager_approval";
+            }
+            if (
+              !statusChanged &&
+              !managerApproval &&
+              payload.new?.createdAt !== payload.new?.updatedAt
+            ) {
+              message = "Reward updated";
+            }
+
+            let repo = "";
+            const activities = rewards.find(
+              (r) => r.id === payload.new?.id,
+            )?.activities;
+            if (activities?.length > 0) {
+              repo = activities?.[0]?.repository;
+            }
+
+            const newLiveEvents = [...liveEvents];
+            newLiveEvents.unshift({
+              id: payload.commit_timestamp,
+              type,
+              message,
+              repo,
+              time: payload.new?.updatedAt,
+              tokens: 10,
+              status: payload.new?.status,
+              managerApproval: payload.new?.managerApproval,
+              hrApproval: payload.new?.hrApproval,
+            });
+
+            setLiveEvents(newLiveEvents);
+          }
+        },
+      )
+      .subscribe();
+  }, []);
 
   useEffect(() => {
     let selectedUser = liveStreamUser;
@@ -129,205 +189,84 @@ export function LiveStream({
           activities:reward_activities(*)`,
         )
         .eq("developerId", selectedUser)
-        .gt("createdAt", new Date(Date.now() - 5 * 60 * 1000).toISOString())
+        .gt(
+          "createdAt",
+          new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+        )
         .order("createdAt", {
-          ascending: true,
+          ascending: false,
         })
         .then(({ data, error }) => {
           if (error) {
             console.error("Error fetching rewards:", error);
           } else {
-            console.log("rewards", rewards);
             setRewards(data || []);
+
+            const liveEvents = data.map((r) => {
+              let type = "commit";
+              let message = "Commit made";
+              if (r.status === "manager_approved") {
+                type = "manager_approval";
+                message = "Manager approved this commit";
+              }
+              if (r.status === "fully_approved") {
+                type = "distribution";
+                message = `HR approved this commit. ${r.totalTokens} CKC being distributed to your wallet!`;
+              }
+              if (r.status === "distributed") {
+                type = "completed";
+                message = "Reward cycle completed!";
+              }
+              if (r.status === "pending" && r.activities?.length > 0) {
+                message =
+                  "Commit made: " +
+                  r.activities?.map((a) => a.description).join(", ");
+              }
+              return {
+                id: r.id,
+                type,
+                message,
+                repo: r.activities?.[0]?.repository || "",
+                time: r.updatedAt,
+                tokens: r.totalTokens,
+                status: r.status,
+                managerApproval: r.managerApproval?.approved ? true : false,
+                hrApproval: r.hrApproval?.approved ? true : false,
+              };
+            });
+            // Set initial events
+            setLiveEvents(liveEvents);
           }
         });
     }
   }, [liveStreamUser]);
 
-  // Mock events for each developer
-  const mockEvents: Record<string, any[]> = {
-    josualeonard: [
-      {
-        id: 1,
-        type: "commit",
-        message: "Fixed authentication bug in login module",
-        repo: "main-app",
-        timestamp: "2024-10-09T14:23:15Z",
-        tokens: 10,
-      },
-      {
-        id: 2,
-        type: "commit",
-        message: "Updated user profile UI",
-        repo: "main-app",
-        timestamp: "2024-10-09T14:45:32Z",
-        tokens: 10,
-      },
-      {
-        id: 3,
-        type: "manager_approval",
-        message: "Reward approved by Manager",
-        timestamp: "2024-10-09T15:12:08Z",
-        tokens: 120,
-      },
-      {
-        id: 4,
-        type: "hr_approval",
-        message: "Reward approved by HR Manager",
-        timestamp: "2024-10-09T15:34:21Z",
-        tokens: 120,
-      },
-      {
-        id: 5,
-        type: "distribution",
-        message: "120 CKC tokens distributed to wallet",
-        timestamp: "2024-10-09T15:34:45Z",
-        tokens: 120,
-      },
-      {
-        id: 6,
-        type: "completed",
-        message: "Reward cycle completed",
-        timestamp: "2024-10-09T15:35:00Z",
-      },
-    ],
-    jed: [
-      {
-        id: 1,
-        type: "commit",
-        message: "Refactored API endpoints",
-        repo: "api-service",
-        timestamp: "2024-10-09T13:15:22Z",
-        tokens: 10,
-      },
-      {
-        id: 2,
-        type: "commit",
-        message: "Added unit tests for payment module",
-        repo: "api-service",
-        timestamp: "2024-10-09T13:42:10Z",
-        tokens: 10,
-      },
-      {
-        id: 3,
-        type: "manager_approval",
-        message: "Reward approved by Manager",
-        timestamp: "2024-10-09T14:18:33Z",
-        tokens: 150,
-      },
-    ],
-    charlie: [
-      {
-        id: 1,
-        type: "commit",
-        message: "Updated documentation",
-        repo: "docs",
-        timestamp: "2024-10-09T12:08:45Z",
-        tokens: 10,
-      },
-      {
-        id: 2,
-        type: "commit",
-        message: "Fixed broken links in README",
-        repo: "docs",
-        timestamp: "2024-10-09T12:25:12Z",
-        tokens: 10,
-      },
-      {
-        id: 3,
-        type: "manager_approval",
-        message: "Reward approved by Manager",
-        timestamp: "2024-10-09T13:05:28Z",
-        tokens: 80,
-      },
-      {
-        id: 4,
-        type: "hr_approval",
-        message: "Reward approved by HR Manager",
-        timestamp: "2024-10-09T13:22:41Z",
-        tokens: 80,
-      },
-      {
-        id: 5,
-        type: "distribution",
-        message: "80 CKC tokens distributed to wallet",
-        timestamp: "2024-10-09T13:23:05Z",
-        tokens: 80,
-      },
-      {
-        id: 6,
-        type: "completed",
-        message: "Reward cycle completed",
-        timestamp: "2024-10-09T13:23:20Z",
-      },
-    ],
-    diana: [
-      {
-        id: 1,
-        type: "commit",
-        message: "Implemented dark mode theme",
-        repo: "mobile-app",
-        timestamp: "2024-10-09T11:15:30Z",
-        tokens: 10,
-      },
-    ],
-    ethan: [
-      {
-        id: 1,
-        type: "commit",
-        message: "Optimized database queries",
-        repo: "backend",
-        timestamp: "2024-10-09T10:42:18Z",
-        tokens: 10,
-      },
-      {
-        id: 2,
-        type: "commit",
-        message: "Added caching layer",
-        repo: "backend",
-        timestamp: "2024-10-09T11:08:55Z",
-        tokens: 10,
-      },
-    ],
-  };
-
   const developer =
     developers.find((d) => d.id === liveStreamUser) || developers[0];
 
-  // Filter events based on time range
-  const getFilteredRewards = () => {
-    const now = new Date();
-
-    if (timeFilter === "now") {
-      return rewards;
-    }
-
-    const minutesAgo = timeFilter === "lastMinute" ? 1 : 5;
-    const cutoffTime = new Date(now.getTime() - minutesAgo * 60 * 1000);
-
-    return rewards.filter((event) => {
-      const eventTime = new Date(event.createdAt);
-      return eventTime >= cutoffTime;
-    });
-  };
-
-  const events = getFilteredRewards();
-  const activityStatus = getActivityStatus(events);
-
   // Update progress bar with animation every second
   useEffect(() => {
-    const targetProgress = activityStatus.progress;
-    setProgress(targetProgress);
+    const initialNow = new Date();
+    const nextHour = new Date(initialNow.getTime() + 6 * 1000);
 
     // Update current time every second
     const timeInterval = setInterval(() => {
-      setCurrentTime(new Date());
+      const dateNow = new Date();
+      setCurrentTime(dateNow);
+      const progressValue =
+        1 -
+        (dateNow.getTime() - nextHour.getTime()) /
+          (initialNow.getTime() - nextHour.getTime());
+
+      if (progressValue < 100) {
+        setProgress(progressValue > 100 ? 100 : progressValue);
+      }
     }, 1000);
 
     return () => {
       clearInterval(timeInterval);
     };
-  }, [activityStatus.progress]);
+  }, []);
 
   return (
     <div className="p-6 space-y-6">
@@ -341,35 +280,6 @@ export function LiveStream({
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Time Filter Radio Group */}
-          <div className="flex flex-col gap-2">
-            <Label className="text-sm">Start listening from:</Label>
-            <RadioGroup
-              value={timeFilter}
-              onValueChange={setTimeFilter}
-              className="flex gap-4"
-            >
-              <div className="flex items-center space-x-2 radio-select">
-                <RadioGroupItem value="now" id="now" />
-                <Label htmlFor="now" className="cursor-pointer">
-                  Now
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2 radio-select">
-                <RadioGroupItem value="lastMinute" id="lastMinute" />
-                <Label htmlFor="lastMinute" className="cursor-pointer">
-                  Last minute
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2 radio-select">
-                <RadioGroupItem value="last5Minutes" id="last5Minutes" />
-                <Label htmlFor="last5Minutes" className="cursor-pointer">
-                  Last 5 minutes
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-
           {/* Developer Select */}
           <div className="flex flex-col gap-2">
             <Label className="text-sm">Developer:</Label>
@@ -402,7 +312,7 @@ export function LiveStream({
                 Current Activity: {developer.name || developer.github_username}
               </CardTitle>
               <CardDescription>
-                {developer.github} • Last updated:{" "}
+                {developer.github_username} •{" "}
                 {currentTime.toLocaleTimeString("en-US", {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -420,8 +330,7 @@ export function LiveStream({
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <span className="font-medium">{activityStatus.text}</span>
-              <span className="text-sm text-gray-500">{progress}%</span>
+              <span className="font-medium">Listening...</span>
             </div>
             <div className="relative">
               <Progress
@@ -449,49 +358,7 @@ export function LiveStream({
             </div>
           </div>
 
-          {events.length > 0 && (
-            <div className="grid grid-cols-4 gap-4 pt-4 border-t">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {events.filter((e) => e.type === "commit").length}
-                </div>
-                <div className="text-sm text-gray-500">Commits</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">
-                  {events.filter((e) => e.type === "manager_approval").length}
-                </div>
-                <div className="text-sm text-gray-500">Manager Approved</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {events.filter((e) => e.type === "hr_approval").length}
-                </div>
-                <div className="text-sm text-gray-500">HR Approved</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600">
-                  {events
-                    .filter((e) => e.type === "distribution")
-                    .reduce((sum, e) => sum + (e.tokens || 0), 0)}
-                </div>
-                <div className="text-sm text-gray-500">CKC Distributed</div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Event Stream */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Event Stream</CardTitle>
-          <CardDescription>
-            Detailed timeline of all activities and approvals
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {events.length === 0 ? (
+          {liveEvents.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <Clock className="w-12 h-12 mx-auto mb-4 text-gray-400" />
               <p>No events recorded yet</p>
@@ -502,7 +369,7 @@ export function LiveStream({
             </div>
           ) : (
             <div className="space-y-3">
-              {events.map((event, index) => (
+              {liveEvents.map((event, index) => (
                 <motion.div
                   key={event.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -516,18 +383,22 @@ export function LiveStream({
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex-1">
                           <p className="font-medium">{event.message}</p>
-                          {event.repo && (
+                          {event.repo ? (
                             <p className="text-sm text-gray-600 mt-1">
                               Repository:{" "}
                               <code className="bg-white px-1.5 py-0.5 rounded">
                                 {event.repo}
                               </code>
                             </p>
+                          ) : (
+                            <p className="text-sm text-gray-600 mt-1">
+                              No activities
+                            </p>
                           )}
                         </div>
                         <div className="text-right flex-shrink-0">
                           <div className="text-sm font-medium text-gray-700">
-                            {formatTimestamp(event.timestamp)}
+                            {getTimeAgo(event.time)}
                           </div>
                           {event.tokens && (
                             <Badge variant="secondary" className="mt-1">
