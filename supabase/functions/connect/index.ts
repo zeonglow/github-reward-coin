@@ -273,7 +273,7 @@ app.get("/connect/github/callback", async (c: Context) => {
   }
 });
 
-app.get("/connect/github/webhook/push", async (c: Context) => {
+app.post("/connect/github/webhook/push", async (c: Context) => {
   try {
     // Handle GitHub push events
     const payload = (await c.req.json()) as GithubPushEvent;
