@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   Card,
   CardContent,
@@ -281,6 +281,7 @@ const ManagerDashboard = () => {
     activeDevelopers: 0,
     completedThisMonth: 0,
   });
+  const prevPageRef = useRef(1);
 
   const itemsPerPage = 8;
 
@@ -306,11 +307,11 @@ const ManagerDashboard = () => {
         `*,
         developer:users!developerId(id, github_username, name, email, walletAddress:wallet_address),
         activities:reward_activities(*)`,
-        {count: 'exact',}
+        {count: 'exact'}
       )
       .order('createdAt', {
         ascending: order === 'asc',
-      }).range(from, to);
+      })
 
     if (filterStatus === 'pending-manager') {
       query = query.in('status', ['pending', 'manager_approved']).filter('managerApproval->>approved', 'eq', 'false');
@@ -332,7 +333,7 @@ const ManagerDashboard = () => {
       query = query.eq('developerId', filterDeveloperId);
     }
 
-    query.then(({data, count, error}) => {
+    query.range(from, to).then(({data, count, error}) => {
       if (error) {
         console.error('Error fetching rewards:', error);
         return;
@@ -403,12 +404,27 @@ const ManagerDashboard = () => {
       });
   }, []);
 
+  // Reset to page 1 when filter changes
   useEffect(() => {
+    setCurrentPage(1);
+    prevPageRef.current = 1;
+    const from = 0;
+    const to = itemsPerPage - 1;
+    fetchRewards(from, to, order as 'asc' | 'desc');
+    localStorage.setItem('manager_order', order);
+  }, [filterStatus, filterDeveloperId]);
+
+  useEffect(() => {
+    if (prevPageRef.current === currentPage) {
+      return;
+    }
+    
     const from = (currentPage - 1) * itemsPerPage;
     const to = currentPage * itemsPerPage - 1;
     fetchRewards(from, to, order as 'asc' | 'desc');
     localStorage.setItem('manager_order', order);
-  }, [order, currentPage, filterStatus, filterDeveloperId]);
+    prevPageRef.current = currentPage;
+  }, [order, currentPage]);
 
   const sendTokenReward = async (
     rewardId: number,
@@ -487,16 +503,8 @@ const ManagerDashboard = () => {
     }
   };
 
-  // Reset to page 1 when filter changes
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [filterStatus]);
-
   // Pagination calculations
   const totalPages = Math.ceil(totalRewards / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedRewards = rewards.slice(startIndex, endIndex);
 
   return (
     <div className="p-6 space-y-6">
@@ -642,7 +650,7 @@ const ManagerDashboard = () => {
           </Card>
         ) : (
           <>
-            {paginatedRewards.map((reward) => (
+            {rewards.map((reward) => (
               <RewardCard
                 key={reward.id}
                 reward={reward}
