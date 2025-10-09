@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useState} from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./components/ui/card";
-import { Badge } from "./components/ui/badge";
-import { Button } from "./components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
+} from './components/ui/card';
+import {Badge} from './components/ui/badge';
+import {Button} from './components/ui/button';
+import {Tabs, TabsContent, TabsList, TabsTrigger} from './components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -16,17 +16,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "./components/ui/table";
+} from './components/ui/table';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./components/ui/select";
-import { Separator } from "./components/ui/separator";
-import { toast } from "sonner";
-import { Toaster } from "./components/ui/sonner";
+} from './components/ui/select';
+import {Separator} from './components/ui/separator';
+import {toast} from 'sonner';
+import {Toaster} from './components/ui/sonner';
 import {
   CheckCircle,
   Clock,
@@ -61,6 +61,7 @@ import { createClient } from "@jsr/supabase__supabase-js";
 import * as supabaseInfo from "./utils/supabase/info";
 import { faker } from "@faker-js/faker";
 
+
 // Create a single supabase client for interacting with your database
 const supabase = createClient(
   `https://${supabaseInfo.projectId}.supabase.co`,
@@ -69,12 +70,12 @@ const supabase = createClient(
 
 const getActivityIcon = (type: string) => {
   switch (type) {
-    case "commit":
-      return <GitCommit className="w-4 h-4" />;
-    case "pr":
-      return <GitPullRequest className="w-4 h-4" />;
-    case "ticket":
-      return <Ticket className="w-4 h-4" />;
+    case 'commit':
+      return <GitCommit className="w-4 h-4"/>;
+    case 'pr':
+      return <GitPullRequest className="w-4 h-4"/>;
+    case 'ticket':
+      return <Ticket className="w-4 h-4"/>;
     default:
       return null;
   }
@@ -197,21 +198,21 @@ const RewardCard = ({ reward, onApprove, userRole }: any) => {
             ))}
           </div>
 
-          <Separator />
+          <Separator/>
 
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
                 {reward.managerApproval?.approved ? (
-                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <CheckCircle className="w-4 h-4 text-green-500"/>
                 ) : (
-                  <Clock className="w-4 h-4 text-gray-400" />
+                  <Clock className="w-4 h-4 text-gray-400"/>
                 )}
                 <span
                   className={
                     reward.managerApproval?.approved
-                      ? "text-green-600"
-                      : "text-gray-500"
+                      ? 'text-green-600'
+                      : 'text-gray-500'
                   }
                 >
                   Manager Approval
@@ -219,15 +220,15 @@ const RewardCard = ({ reward, onApprove, userRole }: any) => {
               </div>
               <div className="flex items-center gap-1">
                 {reward.hrApproval?.approved ? (
-                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <CheckCircle className="w-4 h-4 text-green-500"/>
                 ) : (
-                  <Clock className="w-4 h-4 text-gray-400" />
+                  <Clock className="w-4 h-4 text-gray-400"/>
                 )}
                 <span
                   className={
                     reward.hrApproval?.approved
-                      ? "text-green-600"
-                      : "text-gray-500"
+                      ? 'text-green-600'
+                      : 'text-gray-500'
                   }
                 >
                   HR Approval
@@ -270,9 +271,18 @@ const ManagerDashboard = () => {
   const [order, setOrder] = useState(() => {
     return localStorage.getItem("manager_order") || "desc";
   });
-  console.log(order);
+
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const [totalRewards, setTotalRewards] = useState(0);
+
+  const [stats, setStats] = useState({
+    totalPending: 0,
+    totalTokens: 0,
+    activeDevelopers: 0,
+    completedThisMonth: 0,
+  });
+
+  const itemsPerPage = 8;
 
   // Persist userRole to localStorage
   useEffect(() => {
@@ -289,45 +299,73 @@ const ManagerDashboard = () => {
     localStorage.setItem("manager_filterDeveloperId", filterDeveloperId);
   }, [filterDeveloperId]);
 
-  const fetchRewards = (order: "asc" | "desc" = "desc") => {
+  const fetchRewards = ( from: number, to: number ,order: "asc" | "desc" = "desc") => {
     supabase
       .from("rewards")
       .select(
         `*,
         developer:users!developerId(id, github_username, name, email, walletAddress:wallet_address),
         activities:reward_activities(*)`,
+        { count: "exact",}
       )
       .order("createdAt", {
         ascending: order === "asc",
-      })
-      .then(({ data, error }) => {
+      }).range(from, to)
+      .then(({ data, count, error }) => {
         if (error) {
           console.error("Error fetching rewards:", error);
-        } else {
-          console.log(rewards);
-          setRewards(data || []);
+          return;
         }
+
+          setRewards(data || []);
+          setTotalRewards(count);
       });
   };
 
   useEffect(() => {
+    supabase.from('metrics').select().in('name', ['totalPending', 'totalTokens', 'activeDevelopers']).then(({data: metrics, error}) => {
+      if (error) {
+        console.error('Error fetching metrics:', error);
+        return;
+      }
+
+      const newStats = metrics.reduce((accu, metric) => {
+        accu[metric.name] = metric.value;
+        return accu;
+      }, {})
+
+      setStats(prevState => {
+        return {...prevState, ...newStats}
+      })
+    })
+
+    // 1. Determine the start and end of the current month
+    const now = new Date();
+
+    // Start of the current month (e.g., October 1, 2025 00:00:00)
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    // Start of the next month (used for the less than filter)
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const startOfNextMonth = nextMonth.toISOString();
+
+    // 2. Build the Supabase query
     supabase
-      .from("rewards")
-      .select(
-        `
-        *,
-        developer:users!developerId(id, github_username, name, email, walletAddress:wallet_address),
-        activities:reward_activities(*)
-      `,
-      )
-      .order("createdAt", { ascending: false })
-      .then(({ data, error }) => {
+      .from('rewards')
+      .select('id', { count: 'exact', head: true }) // Use head: true to only get the count
+      .in('status', ['fully_approved', 'distributed']) // Filter by status
+      .gte('createdAt', startOfMonth) // created_at >= start of the current month
+      .lt('createdAt', startOfNextMonth) // created_at < start of the next month
+      .then(({count, error}) => {
         if (error) {
-          console.error("Error fetching rewards:", error);
-        } else {
-          setRewards(data || []);
+          console.error('Error fetching metrics:', error);
+          return;
         }
-      });
+
+        setStats(prevState => {
+          return {...prevState, completedThisMonth: count || 0}
+        })
+    });
 
     supabase
       .from("users")
@@ -342,9 +380,11 @@ const ManagerDashboard = () => {
   }, []);
 
   useEffect(() => {
-    fetchRewards(order as "asc" | "desc");
+    const from = (currentPage - 1) * itemsPerPage;
+    const to = currentPage * itemsPerPage - 1;
+    fetchRewards(from, to, order as "asc" | "desc");
     localStorage.setItem("manager_order", order);
-  }, [order]);
+  }, [order, currentPage, filterStatus]);
 
   const sendTokenReward = async (
     rewardId: number,
@@ -405,7 +445,7 @@ const ManagerDashboard = () => {
       ),
     );
     toast.success(
-      `Reward approved by ${role === "manager" ? "Manager" : "HR Manager"}`,
+      `Reward approved by ${role === 'manager' ? 'Manager' : 'HR Manager'}`,
     );
 
     // if both approvals are done, update status to fully_approved
@@ -451,23 +491,13 @@ const ManagerDashboard = () => {
     return true;
   });
 
-  const stats = {
-    totalPending: rewards.filter(
-      (r) => !["fully_approved", "distributed"].includes(r.status),
-    ).length,
-    totalTokens: rewards.reduce((sum, r) => sum + r.totalTokens, 0),
-    activeDevelopers: new Set(rewards.map((r) => r.developerId)).size,
-    completedThisMonth: rewards.filter((r) => r.status === "fully_approved")
-      .length,
-  };
-
   // Reset to page 1 when filter changes
   React.useEffect(() => {
     setCurrentPage(1);
   }, [filterStatus]);
 
   // Pagination calculations
-  const totalPages = Math.ceil(filteredRewards.length / itemsPerPage);
+  const totalPages = Math.ceil(totalRewards / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedRewards = filteredRewards.slice(startIndex, endIndex);
@@ -483,7 +513,7 @@ const ManagerDashboard = () => {
         </div>
         <Select value={userRole} onValueChange={setUserRole}>
           <SelectTrigger className="w-40">
-            <SelectValue />
+            <SelectValue/>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="manager">Manager</SelectItem>
@@ -497,7 +527,7 @@ const ManagerDashboard = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-orange-500" />
+              <Clock className="w-5 h-5 text-orange-500"/>
               <div>
                 <div className="text-2xl font-bold">{stats.totalPending}</div>
                 <div className="text-sm text-gray-500">Pending Approvals</div>
@@ -508,7 +538,7 @@ const ManagerDashboard = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-blue-500" />
+              <DollarSign className="w-5 h-5 text-blue-500"/>
               <div>
                 <div className="text-2xl font-bold">
                   {stats.totalTokens.toLocaleString()}
@@ -521,7 +551,7 @@ const ManagerDashboard = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-green-500" />
+              <Users className="w-5 h-5 text-green-500"/>
               <div>
                 <div className="text-2xl font-bold">
                   {stats.activeDevelopers}
@@ -534,7 +564,7 @@ const ManagerDashboard = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Target className="w-5 h-5 text-purple-500" />
+              <Target className="w-5 h-5 text-purple-500"/>
               <div>
                 <div className="text-2xl font-bold">
                   {stats.completedThisMonth}
@@ -552,7 +582,7 @@ const ManagerDashboard = () => {
       <div className="flex gap-2">
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-48">
-            <SelectValue />
+            <SelectValue/>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Rewards</SelectItem>
@@ -607,7 +637,7 @@ const ManagerDashboard = () => {
         {filteredRewards.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <Trophy className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+              <Trophy className="w-12 h-12 mx-auto text-gray-400 mb-4"/>
               <p className="text-gray-500">
                 No rewards found for the selected filter.
               </p>
@@ -685,7 +715,7 @@ const ManagerDashboard = () => {
 };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState("manager");
+  const [activeTab, setActiveTab] = useState('manager');
   const [isGitHubConnected, setIsGitHubConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [githubId, setGithubId] = useState<string | null>(null);
@@ -693,10 +723,10 @@ export default function App() {
 
   // Load active tab from localStorage on mount
   useEffect(() => {
-    const savedTab = localStorage.getItem("activeTab");
+    const savedTab = localStorage.getItem('activeTab');
     if (
       savedTab &&
-      ["manager", "developer", "unconnected"].includes(savedTab)
+      ['manager', 'developer', 'unconnected'].includes(savedTab)
     ) {
       setActiveTab(savedTab);
     }
@@ -704,7 +734,7 @@ export default function App() {
 
   // Save active tab to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem("activeTab", activeTab);
+    localStorage.setItem('activeTab', activeTab);
   }, [activeTab]);
 
   // Check GitHub connection status on app load
@@ -721,17 +751,17 @@ export default function App() {
         const response = await fetch(url.toString(), {
           method: "GET",
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
         });
 
         if (response.ok) {
           // If we can access the endpoint, check for user data
           // For now, we'll use localStorage to track connection status
-          const githubStatus = localStorage.getItem("github_connected");
-          const storedGithubId = localStorage.getItem("github_id");
-          const storedGithubUsername = localStorage.getItem("github_username");
-          const connected = githubStatus === "true";
+          const githubStatus = localStorage.getItem('github_connected');
+          const storedGithubId = localStorage.getItem('github_id');
+          const storedGithubUsername = localStorage.getItem('github_username');
+          const connected = githubStatus === 'true';
 
           setIsGitHubConnected(connected);
           setGithubId(storedGithubId);
@@ -739,17 +769,17 @@ export default function App() {
 
           // Set initial tab based on connection status
           if (connected) {
-            if (activeTab === "unconnected") {
-              setActiveTab("developer");
+            if (activeTab === 'unconnected') {
+              setActiveTab('developer');
             }
           } else {
-            if (activeTab === "developer") {
-              setActiveTab("unconnected");
+            if (activeTab === 'developer') {
+              setActiveTab('unconnected');
             }
           }
         }
       } catch (error) {
-        console.log("GitHub status check failed:", error);
+        console.log('GitHub status check failed:', error);
         setIsGitHubConnected(false);
       } finally {
         setIsLoading(false);
@@ -762,22 +792,22 @@ export default function App() {
   // Handle OAuth callback
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const githubConnected = urlParams.get("github_connected");
-    const githubError = urlParams.get("github_error");
+    const githubConnected = urlParams.get('github_connected');
+    const githubError = urlParams.get('github_error');
 
-    if (githubConnected === "true") {
+    if (githubConnected === 'true') {
       // Extract GitHub ID and username from URL parameters
-      const githubIdParam = urlParams.get("github_id");
-      const githubUsernameParam = urlParams.get("github_username");
+      const githubIdParam = urlParams.get('github_id');
+      const githubUsernameParam = urlParams.get('github_username');
 
       setIsGitHubConnected(true);
       setGithubId(githubIdParam);
       setGithubUsername(githubUsernameParam);
-      localStorage.setItem("github_connected", "true");
-      if (githubIdParam) localStorage.setItem("github_id", githubIdParam);
+      localStorage.setItem('github_connected', 'true');
+      if (githubIdParam) localStorage.setItem('github_id', githubIdParam);
       if (githubUsernameParam)
-        localStorage.setItem("github_username", githubUsernameParam);
-      setActiveTab("developer");
+        localStorage.setItem('github_username', githubUsernameParam);
+      setActiveTab('developer');
       // Clean up URL parameters
       window.history.replaceState({}, document.title, window.location.pathname);
 
@@ -785,16 +815,16 @@ export default function App() {
       setTimeout(() => {
         toast.success(
           `GitHub account connected successfully! Welcome @${githubUsernameParam}`,
-          { duration: 3000 },
+          {duration: 3000},
         );
       }, 100);
     } else if (githubError) {
       toast.error(
         `GitHub connection failed: ${decodeURIComponent(githubError)}`,
-        { duration: 5000 },
+        {duration: 5000},
       );
       setIsGitHubConnected(false);
-      localStorage.setItem("github_connected", "false");
+      localStorage.setItem('github_connected', 'false');
       // Clean up URL parameters
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -817,11 +847,11 @@ export default function App() {
     setIsGitHubConnected(false);
     setGithubId(null);
     setGithubUsername(null);
-    localStorage.setItem("github_connected", "false");
-    localStorage.removeItem("github_id");
-    localStorage.removeItem("github_username");
-    setActiveTab("unconnected");
-    toast.success("GitHub account disconnected", {
+    localStorage.setItem('github_connected', 'false');
+    localStorage.removeItem('github_id');
+    localStorage.removeItem('github_username');
+    setActiveTab('unconnected');
+    toast.success('GitHub account disconnected', {
       duration: 3000,
     });
   };
@@ -953,7 +983,7 @@ export default function App() {
                     variant="default"
                     className="bg-green-100 text-green-800"
                   >
-                    <CheckCircle className="w-3 h-3 mr-1" />
+                    <CheckCircle className="w-3 h-3 mr-1"/>
                     GitHub Connected
                   </Badge>
                   <Button
@@ -970,7 +1000,7 @@ export default function App() {
                     variant="secondary"
                     className="bg-yellow-100 text-yellow-800"
                   >
-                    <Clock className="w-3 h-3 mr-1" />
+                    <Clock className="w-3 h-3 mr-1"/>
                     Not Connected
                   </Badge>
                   <Button
@@ -993,7 +1023,7 @@ export default function App() {
             <TabsList className={`grid w-full max-w-2xl grid-cols-2`}>
               <TabsTrigger value="manager">Manager View</TabsTrigger>
               <TabsTrigger
-                value={isGitHubConnected ? "developer" : "unconnected"}
+                value={isGitHubConnected ? 'developer' : 'unconnected'}
               >
                 Developer View
               </TabsTrigger>
@@ -1003,19 +1033,19 @@ export default function App() {
       </div>
 
       <div className="container mx-auto">
-        {activeTab === "manager" && <ManagerDashboard />}
-        {activeTab === "developer" && (
+        {activeTab === 'manager' && <ManagerDashboard/>}
+        {activeTab === 'developer' && (
           <DeveloperDashboard
             supabase={supabase}
             githubId={githubId}
             githubUsername={githubUsername}
           />
         )}
-        {activeTab === "unconnected" && (
-          <UnconnectedView onConnect={handleConnectGithub} />
+        {activeTab === 'unconnected' && (
+          <UnconnectedView onConnect={handleConnectGithub}/>
         )}
       </div>
-      <Toaster />
+      <Toaster/>
     </div>
   );
 }
