@@ -141,13 +141,34 @@ export function LiveStream({
           schema: "public",
           table: "rewards",
         },
-        (payload) => {
+        async (payload) => {
           if (
             (payload.eventType === "UPDATE" ||
               payload.eventType === "INSERT") &&
             payload.new?.developerId === liveStreamUser
           ) {
-            const lastLiveEvent = liveEventsRef.current[0];
+            const lastLiveEvent = liveEventsRef.current.find(
+              (event) => event.rewardId === payload.new?.id,
+            );
+            const newReward = !lastLiveEvent;
+
+            if (!lastLiveEvent) {
+              try {
+                const result = await supabase
+                  .from("rewards")
+                  .select(
+                    `*,
+                    developer:users!developerId(id, github_username, name, email),
+                    activities:reward_activities(*)`,
+                  )
+                  .eq("developerId", liveStreamUser)
+                  .limit(20)
+                  .order("createdAt", {
+                    ascending: false,
+                  });
+                rewardsRef.current = result.data || [];
+              } catch (error) {}
+            }
 
             const statusChanged =
               lastLiveEvent && lastLiveEvent?.status !== payload.new?.status;
@@ -156,16 +177,13 @@ export function LiveStream({
               lastLiveEvent?.managerApproval?.approved === false &&
               payload.new?.managerApproval?.approved === true;
 
-            let message =
-              payload.new.createdAt === payload.new.updatedAt
-                ? "Commit made"
-                : "";
+            let message = newReward ? "New commit made!" : "";
             let type = "commit";
             if (statusChanged) {
               message = "Status changed to " + payload.new?.status;
               if (payload.new?.status === "fully_approved") {
                 type = "distribution";
-                message = `HR approved this commit. ${payload.new?.totalTokens} CKC being distributed to your wallet!`;
+                message = `Manager and HR approved your commit! ${payload.new?.totalTokens} CKC being distributed to your wallet!`;
               }
               if (payload.new?.status === "distributed") {
                 type = "completed";
@@ -173,14 +191,10 @@ export function LiveStream({
               }
             }
             if (managerApproval) {
-              message = "Manager approved this commit";
+              message = "Manager approved your commit!";
               type = "manager_approval";
             }
-            if (
-              !statusChanged &&
-              !managerApproval &&
-              payload.new?.createdAt !== payload.new?.updatedAt
-            ) {
+            if (!statusChanged && !managerApproval && !newReward) {
               message = "Reward updated";
             }
 
@@ -194,7 +208,8 @@ export function LiveStream({
 
             // Create the event object
             const newEvent = {
-              id: payload.commit_timestamp,
+              id: `${payload.new?.id}-${payload.commit_timestamp}`,
+              rewardId: payload.new?.id,
               type,
               message,
               repo,
@@ -237,10 +252,7 @@ export function LiveStream({
           activities:reward_activities(*)`,
         )
         .eq("developerId", selectedUser)
-        .gt(
-          "createdAt",
-          new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-        )
+        .limit(20)
         .order("createdAt", {
           ascending: false,
         })
@@ -252,14 +264,14 @@ export function LiveStream({
 
             const liveEvents = data.map((r) => {
               let type = "commit";
-              let message = "Commit made";
+              let message = "New commit made";
               if (r.status === "manager_approved") {
                 type = "manager_approval";
-                message = "Manager approved this commit";
+                message = "Manager approved your commit!";
               }
               if (r.status === "fully_approved") {
                 type = "distribution";
-                message = `HR approved this commit. ${r.totalTokens} CKC being distributed to your wallet!`;
+                message = `Manager and HR approved your commit! ${r.totalTokens} CKC being distributed to your wallet!`;
               }
               if (r.status === "distributed") {
                 type = "completed";
@@ -267,11 +279,12 @@ export function LiveStream({
               }
               if (r.status === "pending" && r.activities?.length > 0) {
                 message =
-                  "Commit made: " +
+                  "New commit made: " +
                   r.activities?.map((a) => a.description).join(", ");
               }
               return {
                 id: r.id,
+                rewardId: r.id,
                 type,
                 message,
                 repo: r.activities?.[0]?.repository || "",
