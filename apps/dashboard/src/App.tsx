@@ -956,7 +956,7 @@ export default function App() {
         <div className="container mx-auto">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-900">
-              GitHub Reward Coin
+              CodeKudos - Reward Dashboard
             </h1>
             <div className="flex items-center gap-4">
               {isLoading ? (
