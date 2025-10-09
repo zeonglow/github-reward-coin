@@ -56,13 +56,16 @@ class Rewarder {
   }
   async createWallet() {
     const mnemonic = Wallet.createRandom().mnemonic;
-    const newWallet = HDNodeWallet.fromMnemonic(mnemonic!);
-    newWallet.connect(this.provider);
+    if (!mnemonic) {
+      throw new Error("Mnemonic creation failed");
+    }
+    const wallet = HDNodeWallet.fromMnemonic(mnemonic).connect(this.provider);
 
     return {
-      privateKey: newWallet.privateKey,
-      publicKey: newWallet.publicKey,
-      address: newWallet.address,
+      mnemonic,
+      privateKey: wallet.privateKey,
+      publicKey: wallet.publicKey,
+      address: wallet.address,
     };
   }
 }
