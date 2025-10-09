@@ -27,6 +27,32 @@ interface GitHubTokenResponse {
   scope: string;
 }
 
+interface GithubPushEvent {
+  ref: string;
+  commits: Array<{
+    id: string;
+    message: string;
+  }>;
+  repository: {
+    full_name: string;
+  };
+}
+
+interface RewardActivity {
+  description: string;
+  points: number;
+  type: string;
+  rewardId: number;
+}
+
+interface Reward {
+  status: string;
+  developerId: string;
+  totalTokens: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Initialize Supabase client
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -244,6 +270,152 @@ app.get("/connect/github/callback", async (c: Context) => {
     return c.redirect(
       `${Deno.env.get("FRONTEND_URL")}?github_error=${encodeURIComponent((error as Error).message)}`,
     );
+  }
+});
+
+app.get("/connect/github/webhook/push", async (c: Context) => {
+  try {
+    // Handle GitHub push events
+    const payload = (await c.req.json()) as GithubPushEvent;
+
+    // Only handle main branch pushes
+    if (payload.ref !== "refs/heads/main") {
+      return c.json({ error: "Ignored: not main branch" }, 200);
+    }
+
+    const { repository } = payload;
+    const authorStats: Record<
+      string,
+      {
+        commits: number;
+        additions: number;
+        deletions: number;
+        changes: number;
+        points: number;
+      }
+    > = {};
+    const rewardActivities: Partial<Record<string, RewardActivity[]>> = {};
+
+    // Fetch details for each commit
+    await Promise.all(
+      payload.commits.map(async (commit) => {
+        const sha = commit.id;
+        const commitUrl = new URL(
+          `https://api.github.com/repos/${repository.full_name}/commits/${sha}`,
+        );
+        const githubClientId = Deno.env.get("GITHUB_CLIENT_ID");
+        const githubClientSecret = Deno.env.get("GITHUB_CLIENT_SECRET");
+        if (githubClientId && githubClientSecret) {
+          commitUrl.searchParams.set("client_id", githubClientId);
+          commitUrl.searchParams.set("client_secret", githubClientSecret);
+        }
+
+        const commitRes = await fetch(commitUrl.toString(), {
+          headers: {
+            Accept: "application/vnd.github.v3+json",
+            "User-Agent": "CodeChangeWebhook",
+          },
+        });
+
+        type CommitFile = { additions?: number; deletions?: number };
+        type CommitResponse = {
+          author?: { login?: string };
+          commit?: { author?: { name?: string }; message?: string };
+          files?: CommitFile[];
+        };
+
+        const data = (await commitRes.json()) as CommitResponse;
+        const username =
+          data.author?.login || data.commit?.author?.name || "unknown";
+
+        const additions =
+          data.files?.reduce(
+            (a: number, f: CommitFile) => a + (f.additions ?? 0),
+            0,
+          ) || 0;
+        const deletions =
+          data.files?.reduce(
+            (a: number, f: CommitFile) => a + (f.deletions ?? 0),
+            0,
+          ) || 0;
+        const changes = additions + deletions;
+
+        if (!authorStats[username]) {
+          authorStats[username] = {
+            commits: 0,
+            additions: 0,
+            deletions: 0,
+            changes: 0,
+            points: 0,
+          };
+        }
+        if (!rewardActivities[username]) {
+          rewardActivities[username] = [];
+        }
+
+        authorStats[username].commits++;
+        authorStats[username].additions += additions;
+        authorStats[username].deletions += deletions;
+        authorStats[username].changes += changes;
+        authorStats[username].points += Math.floor(changes);
+
+        rewardActivities[username].push({
+          description: commit.message,
+          points: changes,
+          type: "commit",
+          rewardId: 0,
+        });
+      }),
+    );
+
+    // Save to reward
+    for (const [username, stats] of Object.entries(authorStats)) {
+      const reward: Reward = {
+        status: "pending",
+        developerId: username,
+        totalTokens: stats.points,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const { data, error: rewardError } = await supabase
+        .from("rewards")
+        .insert(reward)
+        .select("id");
+      if (rewardError) {
+        console.error("Failed to create reward:", rewardError);
+        continue;
+      }
+
+      const rewardId = data?.[0]?.id;
+      if (!rewardId) {
+        console.error("No reward ID returned");
+        continue;
+      }
+
+      // Insert activities
+      const rewardActivitiesOfDeveloper = rewardActivities[username] ?? [];
+      if (rewardActivitiesOfDeveloper.length === 0) {
+        continue;
+      }
+
+      for (let i = 0; i < rewardActivitiesOfDeveloper.length; i++) {
+        rewardActivitiesOfDeveloper[i].rewardId = rewardId;
+      }
+
+      const { error: activityError } = await supabase
+        .from("reward_activities")
+        .insert(rewardActivitiesOfDeveloper);
+      if (activityError) {
+        console.error("Failed to insert reward activities:", activityError);
+        continue;
+      }
+    }
+
+    return c.json({ status: "ok" });
+  } catch (error) {
+    console.error("GitHub webhook error:", error);
+    return c.json({ error: "Failed to process webhook" }, 500);
   }
 });
 
