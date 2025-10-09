@@ -1,19 +1,16 @@
-import { useState } from "react";
-import { Reward } from "../types/reward";
-import { RewardCard } from "./RewardCard";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { ClipboardList, Clock, CheckCircle, Coins, Users } from "lucide-react";
+import { useState } from 'react';
+import { Reward } from '../types/reward';
+import { RewardCard } from './RewardCard';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Badge } from './ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { ClipboardList, Clock, CheckCircle, Coins, Users } from 'lucide-react';
+import React from 'react';
 
 interface ManagerDashboardProps {
   rewards: Reward[];
-  onApprove: (
-    rewardId: string,
-    type: "manager" | "hr",
-    comment?: string,
-  ) => void;
-  userRole: "manager" | "hr";
+  onApprove: (rewardId: number, role: 'manager' | 'hr', comment?: string) => void;
+  userRole: 'manager' | 'hr';
 }
 
 export function ManagerDashboard({

@@ -7,6 +7,7 @@ import { Progress } from "./ui/progress";
 import { Coins, TrendingUp, Clock, CheckCircle, Copy } from "lucide-react";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
+import React from "react";
 
 interface DeveloperDashboardProps {
   developer: Developer;

@@ -13,11 +13,12 @@ import {
   Clock,
   User,
 } from "lucide-react";
+import React from "react";
 
 interface RewardCardProps {
   reward: Reward;
   onApprove?: (
-    rewardId: string,
+    rewardId: number,
     type: "manager" | "hr",
     comment?: string,
   ) => void;
