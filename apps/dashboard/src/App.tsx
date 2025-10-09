@@ -102,7 +102,7 @@ const getStatusBadge = (reward: any) => {
       return <Badge variant="outline">Pending</Badge>;
     case 'manager_approved':
       if (reward.managerApproval?.approved) {
-        return <Badge variant="secondary">HR Review</Badge>;
+        return <Badge variant="secondary" className="bg-yellow-500 text-white">HR Review</Badge>;
       } else {
         return <Badge variant="outline">Manager Review</Badge>;
       }
@@ -141,7 +141,7 @@ const RewardCard = ({reward, onApprove, userRole}: any) => {
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="flex items-center gap-2">
-              {reward.developer.name}
+              {reward.developer.name || reward.developer.email}
               {getStatusBadge(reward)}
             </CardTitle>
             <CardDescription>
@@ -283,18 +283,18 @@ const ManagerDashboard = () => {
   };
 
   const filteredRewards = rewards.filter((reward) => {
-    if (filterStatus === "pending-manager") return !reward.managerApproval;
+    if (filterStatus === "pending-manager") return ['manager_approved', 'pending'].includes(reward.status) && !reward.managerApproval?.approved;
     if (filterStatus === "pending-hr")
-      return reward.managerApproval && !reward.hrApproval;
-    if (filterStatus === "approved") return reward.hrApproval;
+      return reward.status === 'manager_approved' && !reward.hrApproval?.approved;
+    if (filterStatus === "approved") return reward.status === 'fully_approved';
     return true;
   });
 
   const stats = {
-    totalPending: rewards.filter((r) => !r.hrApproval).length,
+    totalPending: rewards.filter((r) => !['fully_approved', 'distributed'].includes(r.status)).length,
     totalTokens: rewards.reduce((sum, r) => sum + r.totalTokens, 0),
     activeDevelopers: new Set(rewards.map((r) => r.developerId)).size,
-    completedThisMonth: rewards.filter((r) => r.hrApproval).length,
+    completedThisMonth: rewards.filter((r) => r.status === 'fully_approved').length,
   };
 
   return (
