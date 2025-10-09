@@ -1,6 +1,7 @@
 export interface Developer {
   id: string;
   name: string;
+  github_username: string;
   email: string;
   walletAddress: string;
   avatar?: string;

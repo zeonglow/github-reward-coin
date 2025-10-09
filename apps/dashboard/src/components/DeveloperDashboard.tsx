@@ -30,22 +30,15 @@ import {
 import { Button } from "./ui/button";
 import { toast } from "sonner";
 import React, { useState, useEffect } from "react";
-// @ts-expect-error - JSR import resolution issue
-import { createClient } from "@jsr/supabase__supabase-js";
-import * as supabaseInfo from "../utils/supabase/info";
-
-// Create a single supabase client for interacting with your database
-const supabase = createClient(
-  `https://${supabaseInfo.projectId}.supabase.co`,
-  supabaseInfo.publicAnonKey,
-);
 
 interface DeveloperDashboardProps {
+  supabase: any;
   githubId: string | null;
   githubUsername: string | null;
 }
 
 export function DeveloperDashboard({
+  supabase,
   githubId,
   githubUsername,
 }: DeveloperDashboardProps) {

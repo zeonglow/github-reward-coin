@@ -90,17 +90,20 @@ export function RewardCard({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Avatar>
+            <Avatar className="w-10 h-10">
               <AvatarImage src={reward.developer.avatar} />
-              <AvatarFallback>
-                {reward.developer.name
+              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold text-sm">
+                {(reward.developer.name || reward.developer.github_username)
                   .split(" ")
                   .map((n) => n[0])
-                  .join("")}
+                  .join("")
+                  .toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
-              <CardTitle className="text-lg">{reward.developer.name}</CardTitle>
+              <CardTitle className="text-lg">
+                {reward.developer.name || reward.developer.github_username}
+              </CardTitle>
               <p className="text-sm text-muted-foreground">
                 {reward.developer.email}
               </p>
@@ -115,7 +118,6 @@ export function RewardCard({
           </div>
         </div>
       </CardHeader>
-
       <CardContent>
         <div className="space-y-3">
           <div>
@@ -150,16 +152,15 @@ export function RewardCard({
 
           <div className="flex items-center text-sm text-muted-foreground">
             <Calendar className="w-4 h-4 mr-1" />
-            Created: {reward.createdAt.toLocaleDateString()}
+            Created: {new Date(reward.createdAt).toLocaleDateString()}
           </div>
-
-          {reward.managerApproval && (
+          {reward.managerApproval?.approved && (
             <div className="p-2 bg-blue-50 rounded-md">
               <p className="text-sm">
                 ✅ Manager Approved by {reward.managerApproval.approvedBy}
               </p>
               <p className="text-xs text-muted-foreground">
-                {reward.managerApproval.approvedAt.toLocaleString()}
+                {new Date(reward.managerApproval.approvedAt).toLocaleString()}
               </p>
               {reward.managerApproval.comment && (
                 <p className="text-xs italic mt-1">
@@ -168,14 +169,13 @@ export function RewardCard({
               )}
             </div>
           )}
-
-          {reward.hrApproval && (
+          {reward.hrApproval?.approved && (
             <div className="p-2 bg-green-50 rounded-md">
               <p className="text-sm">
                 ✅ HR Approved by {reward.hrApproval.approvedBy}
               </p>
               <p className="text-xs text-muted-foreground">
-                {reward.hrApproval.approvedAt.toLocaleString()}
+                {new Date(reward.hrApproval.approvedAt).toLocaleString()}
               </p>
               {reward.hrApproval.comment && (
                 <p className="text-xs italic mt-1">
@@ -189,7 +189,7 @@ export function RewardCard({
             <div className="pt-3 border-t">
               {canApproveAsManager && (
                 <Button
-                  onClick={() => onApprove?.(reward.id, "manager")}
+                  onClick={() => onApprove?.(Number(reward.id), "manager")}
                   className="w-full"
                 >
                   Approve as Manager
@@ -197,7 +197,7 @@ export function RewardCard({
               )}
               {canApproveAsHR && (
                 <Button
-                  onClick={() => onApprove?.(reward.id, "hr")}
+                  onClick={() => onApprove?.(Number(reward.id), "hr")}
                   className="w-full"
                 >
                   Approve as HR Manager
