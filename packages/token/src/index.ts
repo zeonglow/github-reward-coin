@@ -15,10 +15,9 @@ app.post("/api/reward", async (req, res) => {
     res.status(400).send({ error: result.error });
     return;
   }
-  const transactionRequest: TransactionRequest =
-    result.data as TransactionRequest;
+  const transactionRequest: TransactionRequest = result.data;
 
-  const rewardStatus = await giveReward(transactionRequest)
+  const rewardStatus = await giveReward(transactionRequest);
   res.json({
     ...transactionRequest,
     timestamp: new Date().toISOString(),
