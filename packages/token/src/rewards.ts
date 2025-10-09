@@ -57,7 +57,11 @@ class Rewarder {
 
 const rewarder = new Rewarder();
 
-export async function giveReward(args: { to: string; amount: bigint }) {
-  const { to, amount } = args;
-  return await rewarder.sendReward(to, amount, false);
+export async function giveReward(args: {
+  to: string;
+  amount: bigint;
+  confirm?: boolean;
+}) {
+  const { to, amount, confirm = false } = args;
+  return await rewarder.sendReward(to, amount, confirm);
 }
