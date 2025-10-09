@@ -17,6 +17,12 @@
     "type": "git",
     "url": "https://github.com/zeonglow/github-reward-coin.git"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "private": true,
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^4.0.1",

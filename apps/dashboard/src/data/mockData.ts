@@ -1,4 +1,4 @@
-import { Developer, Reward, RewardActivity } from "../../../../types/reward";
+import { Developer, Reward } from "../types/reward";
 
 export const mockDevelopers: Developer[] = [
   {
