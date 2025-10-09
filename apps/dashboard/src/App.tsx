@@ -268,7 +268,7 @@ const ManagerDashboard = () => {
     activeDevelopers: 0,
     completedThisMonth: 0,
   });
-  const prevPageRef = useRef(1);
+  const paginationResetRef = useRef(false);
 
   const itemsPerPage = 8;
 
@@ -394,7 +394,7 @@ const ManagerDashboard = () => {
   // Reset to page 1 when filter changes
   useEffect(() => {
     setCurrentPage(1);
-    prevPageRef.current = 1;
+    paginationResetRef.current = true;
     const from = 0;
     const to = itemsPerPage - 1;
     fetchRewards(from, to, order as 'asc' | 'desc');
@@ -402,7 +402,8 @@ const ManagerDashboard = () => {
   }, [filterStatus, filterDeveloperId]);
 
   useEffect(() => {
-    if (prevPageRef.current === currentPage) {
+    if (paginationResetRef.current === true) {
+      paginationResetRef.current = false;
       return;
     }
 
@@ -410,7 +411,6 @@ const ManagerDashboard = () => {
     const to = currentPage * itemsPerPage - 1;
     fetchRewards(from, to, order as 'asc' | 'desc');
     localStorage.setItem('manager_order', order);
-    prevPageRef.current = currentPage;
   }, [order, currentPage]);
 
   const sendTokenReward = async (
@@ -956,7 +956,7 @@ export default function App() {
         <div className="container mx-auto">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-900">
-              CodeKudos - Reward Dashboard
+              CodeKudos Coin Reward
             </h1>
             <div className="flex items-center gap-4">
               {isLoading ? (
