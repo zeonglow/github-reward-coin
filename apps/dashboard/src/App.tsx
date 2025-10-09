@@ -418,7 +418,7 @@ const ManagerDashboard = () => {
     if (prevPageRef.current === currentPage) {
       return;
     }
-    
+
     const from = (currentPage - 1) * itemsPerPage;
     const to = currentPage * itemsPerPage - 1;
     fetchRewards(from, to, order as 'asc' | 'desc');
