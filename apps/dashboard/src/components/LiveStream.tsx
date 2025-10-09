@@ -120,6 +120,7 @@ export function LiveStream({
           newLiveEvents.slice(0, 50);
 
           liveEventsRef.current = newLiveEvents;
+          console.log("liveEventsRef.current", liveEventsRef.current);
 
           return newLiveEvents;
         });
@@ -141,6 +142,9 @@ export function LiveStream({
           table: "rewards",
         },
         async (payload) => {
+          console.log("payload", payload);
+          console.log("payload", payload.eventType);
+          console.log("payload.new", payload.new);
           if (
             (payload.eventType === "UPDATE" ||
               payload.eventType === "INSERT") &&
@@ -149,7 +153,10 @@ export function LiveStream({
             const lastLiveEvent = liveEventsRef.current.find(
               (event) => event.rewardId === payload.new?.id,
             );
+            console.log("lastLiveEvent", lastLiveEvent);
             const newReward = !lastLiveEvent;
+
+            console.log("newReward", newReward ? "yes" : "no");
 
             if (newReward) {
               try {
@@ -168,15 +175,18 @@ export function LiveStream({
                 if (result?.data?.length > 0) {
                   rewardsRef.current = result.data || [];
                 }
+                console.log("rewardsRef.current", rewardsRef.current);
               } catch (error) {}
             }
 
             const statusChanged =
               lastLiveEvent && lastLiveEvent?.status !== payload.new?.status;
+            console.log("statusChanged", statusChanged);
             const managerApproval =
               lastLiveEvent &&
               lastLiveEvent?.managerApproval?.approved === false &&
               payload.new?.managerApproval?.approved === true;
+            console.log("managerApproval", managerApproval);
 
             let message = newReward ? "New commit made!" : "";
             let type = "commit";
@@ -220,6 +230,8 @@ export function LiveStream({
               managerApproval: payload.new?.managerApproval,
               hrApproval: payload.new?.hrApproval,
             };
+
+            console.log("newEvent", newEvent);
 
             // Use debounced update instead of direct state update
             debouncedUpdate(newEvent);
