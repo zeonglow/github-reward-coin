@@ -1533,12 +1533,12 @@
   }
 
   .header-container {
-    overflow: hidden;
+    padding-bottom: 0;
   }
 
   .header-container-inside {
     display: flex;
-    height: 90px;
+    padding-right: 20px;
   }
 
   .logo {
@@ -1549,6 +1549,16 @@
 
   .header-content {
     flex: 1;
+  }
+
+  @media (width < 40rem) {
+    .header-content h1 {
+      font-size: 0.8em;
+    }
+    .logo {
+      width: 124px;
+      height: 124px;
+    }
   }
 
   .see-live {

@@ -51,6 +51,7 @@ import { createClient } from "@jsr/supabase__supabase-js";
 import * as supabaseInfo from "./utils/supabase/info";
 import { faker } from "@faker-js/faker";
 import { getTimeAgo } from "./utils/time";
+import { motion } from "motion/react";
 
 // Create a single supabase client for interacting with your database
 const supabase = createClient(
@@ -642,13 +643,20 @@ const ManagerDashboard = ({
           </Card>
         ) : (
           <>
-            {rewards.map((reward) => (
-              <RewardCard
+            {rewards.map((reward, index) => (
+              <motion.div
                 key={reward.id}
-                reward={reward}
-                onApprove={handleApprove}
-                userRole={userRole}
-              />
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <RewardCard
+                  key={reward.id}
+                  reward={reward}
+                  onApprove={handleApprove}
+                  userRole={userRole}
+                />
+              </motion.div>
             ))}
 
             {/* Pagination */}
