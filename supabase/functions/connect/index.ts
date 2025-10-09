@@ -374,9 +374,19 @@ app.post("/connect/github/webhook/push", async (c: Context) => {
 
     // Save to reward
     for (const [username, stats] of Object.entries(authorStats)) {
+      const user = await supabase
+        .from("users")
+        .select("id")
+        .eq("github_username", username)
+        .single();
+      if (!user.data?.id) {
+        console.error(`No user found for GitHub username: ${username}`);
+        continue;
+      }
+
       const reward: Reward = {
         status: "pending",
-        developerId: username,
+        developerId: user.data?.id || "unknown",
         totalTokens: stats.points,
         createdAt: new Date(),
         updatedAt: new Date(),
