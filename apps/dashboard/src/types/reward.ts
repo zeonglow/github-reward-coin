@@ -7,21 +7,21 @@ export interface Developer {
 }
 
 export interface RewardActivity {
-  type: 'commit' | 'pr' | 'ticket';
+  type: "commit" | "pr" | "ticket";
   description: string;
   repository?: string;
   ticketId?: string;
-  count: number;
   points: number;
+  count?: number;
 }
 
 export interface Reward {
-  id: number;
+  id: number | string;
   developerId: string;
   developer: Developer;
   activities: RewardActivity[];
   totalTokens: number;
-  status: 'pending' | 'manager_approved' | 'fully_approved' | 'distributed';
+  status: "pending" | "manager_approved" | "fully_approved" | "distributed";
   managerApproval?: {
     approved: boolean;
     approvedBy: string;
@@ -34,7 +34,7 @@ export interface Reward {
     approvedAt: Date;
     comment?: string;
   };
-  period: string;
+  period?: string;
   createdAt: Date;
   updatedAt: Date;
 }
