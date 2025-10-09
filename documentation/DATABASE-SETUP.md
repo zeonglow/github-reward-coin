@@ -3,6 +3,7 @@
 ## ❌ **Current Issue: Missing Table**
 
 The error you're seeing:
+
 ```
 Could not find the table 'public.kv_store_b1e42adc' in the schema cache
 ```
@@ -35,11 +36,13 @@ If you don't want to create the table, we can modify the server to use in-memory
 ## 🎯 **Step-by-Step Fix**
 
 ### **1. Go to Supabase Dashboard**
+
 1. Open: https://supabase.com/dashboard
 2. Select your project
 3. Go to **SQL Editor**
 
 ### **2. Create the Table**
+
 Copy and paste this SQL:
 
 ```sql
@@ -55,9 +58,11 @@ GRANT ALL ON kv_store_b1e42adc TO service_role;
 ```
 
 ### **3. Run the SQL**
+
 Click **Run** to execute the SQL and create the table.
 
 ### **4. Restart Server**
+
 ```bash
 yarn server
 ```
@@ -66,7 +71,7 @@ yarn server
 
 ```bash
 # Test OAuth endpoint
-curl -I http://localhost:8000/connect/github
+curl -I http://localhost:54321/functions/v1/connect/github
 
 # Should redirect to GitHub (no table errors)
 ```

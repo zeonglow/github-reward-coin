@@ -57,7 +57,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "deploy": "SUPABASE_ACCESS_TOKEN=sbp_20a68b0be7088a01355c974d05cb334990e636b6 supabase functions deploy connect --project-ref uvkwcralkuwqocgsmcap"
   },
   "volta": {
     "npm": "9.8.1",

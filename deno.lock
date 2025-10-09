@@ -5333,8 +5333,10 @@
     "members": {
       "apps/dashboard": {
         "dependencies": [
-          "jsr:@supabase/supabase-js@2.49.8",
-          "npm:hono@4"
+          "jsr:@hono/cors@4",
+          "jsr:@hono/hono@4",
+          "jsr:@hono/logger@4",
+          "jsr:@supabase/supabase-js@2.49.8"
         ],
         "packageJson": {
           "dependencies": [

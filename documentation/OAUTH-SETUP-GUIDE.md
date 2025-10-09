@@ -10,7 +10,7 @@ The `oauth_initiation_failed` error is caused by missing environment variables. 
 2. **Fill in the form**:
    - **Application name**: `GitHub Reward Coin Local`
    - **Homepage URL**: `http://localhost:3000`
-   - **Authorization callback URL**: `http://localhost:8000/connect/github/callback`
+   - **Authorization callback URL**: `http://localhost:54321/functions/v1/connect/github/callback`
 3. **Click "Register application"**
 4. **Copy the Client ID and Client Secret**
 
@@ -71,7 +71,7 @@ source .env.local
 ### ❌ **"Invalid redirect_uri"**
 
 - **Cause**: GitHub OAuth app redirect URI doesn't match
-- **Fix**: Set redirect URI to `http://localhost:8000/connect/github/callback`
+- **Fix**: Set redirect URI to `http://localhost54321/functions/v1/connect/github/callback`
 
 ### ❌ **"Client authentication failed"**
 

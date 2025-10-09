@@ -38,3 +38,5 @@ yarn-error.log*
 *.pem
 .yarn
 .idea
+.branches
+.temp
