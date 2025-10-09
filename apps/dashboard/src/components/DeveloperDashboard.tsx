@@ -22,10 +22,10 @@ import {
   Coins,
   TrendingUp,
   Clock,
-  CheckCircle,
   Copy,
   Trophy,
   Wallet,
+  Lock,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
@@ -35,22 +35,34 @@ interface DeveloperDashboardProps {
   supabase: any;
   githubId: string | null;
   githubUsername: string | null;
+  liveStreamUser: string;
+  setLiveStreamUser: (user: string) => void;
+  setActiveTab: (tab: string) => void;
 }
 
 export function DeveloperDashboard({
   supabase,
   githubId,
   githubUsername,
+  liveStreamUser,
+  setLiveStreamUser,
+  setActiveTab,
 }: DeveloperDashboardProps) {
   const [walletAddress, setWalletAddress] = useState<string>("");
+  const [walletPrivateKey, setWalletPrivateKey] = useState<string>("");
   const [developerRewards, setDeveloperRewards] = useState<Reward[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const contractAddress: string = "0x8490a7b3800Cd46F3cB68E6e451FFbd8a7AdC6Ef";
 
   // Load wallet address from localStorage on mount
   useEffect(() => {
     const storedWalletAddress = localStorage.getItem("wallet_address");
     if (storedWalletAddress) {
       setWalletAddress(storedWalletAddress);
+    }
+    const storedWalletPrivateKey = localStorage.getItem("wallet_private_key");
+    if (storedWalletPrivateKey) {
+      setWalletPrivateKey(storedWalletPrivateKey);
     }
   }, []);
 
@@ -64,11 +76,11 @@ export function DeveloperDashboard({
         // Use the format `${githubUsername}${githubId}` as developerId
         const developerId = `${githubUsername}${githubId}`;
 
-        if (!walletAddress) {
+        if (!walletAddress || !walletPrivateKey) {
           // Fetch user's wallet address from users table
           const { data: userData, error: userError } = await supabase
             .from("users")
-            .select("wallet_address")
+            .select("wallet_address,wallet_private_key")
             .eq("id", developerId)
             .single();
 
@@ -78,6 +90,11 @@ export function DeveloperDashboard({
             setWalletAddress(userData.wallet_address);
             // Store wallet address locally
             localStorage.setItem("wallet_address", userData.wallet_address);
+            setWalletPrivateKey(userData.wallet_private_key);
+            localStorage.setItem(
+              "wallet_private_key",
+              userData.wallet_private_key,
+            );
           }
         }
 
@@ -96,7 +113,6 @@ export function DeveloperDashboard({
         if (rewardsError) {
           console.error("Error fetching user rewards:", rewardsError);
         } else {
-          console.log("User rewards data:", rewardsData);
           setDeveloperRewards(rewardsData || []);
         }
       } catch (error) {
@@ -115,7 +131,7 @@ export function DeveloperDashboard({
     (r) => r.status === "distributed",
   );
   const approvedRewards = developerRewards.filter(
-    (r) => r.status === "fully_approved",
+    (r) => r.status === "fully_approved" || r.status === "distributed",
   );
   const totalKCKRewards = earnedRewards.reduce(
     (sum, r) => sum + r.totalTokens,
@@ -128,6 +144,14 @@ export function DeveloperDashboard({
   const copyWallet = () => {
     navigator.clipboard.writeText(walletAddress);
     toast.success("Wallet address copied to clipboard");
+  };
+  const copyWalletPrivateKey = () => {
+    navigator.clipboard.writeText(walletPrivateKey);
+    toast.success("Private key copied to clipboard");
+  };
+  const copyContractAddress = () => {
+    navigator.clipboard.writeText(contractAddress);
+    toast.success("Contract address copied to clipboard");
   };
 
   const formatActivities = (activities: any[]) => {
@@ -206,21 +230,74 @@ export function DeveloperDashboard({
           <h1 className="text-3xl font-bold">Developer Dashboard</h1>
           <p className="text-gray-600">Your CodeKudos Coin (CKC) Rewards</p>
           {githubUsername && (
-            <p className="text-sm text-blue-600">Welcome, @{githubUsername}!</p>
+            <>
+              <p className="text-sm text-blue-600">
+                Welcome, @{githubUsername}!
+                <Button
+                  variant="outline"
+                  size="xs"
+                  className="see-live"
+                  onClick={() => {
+                    const developerId = `${githubUsername}${githubId}`;
+                    console.log("liveStreamUser", developerId);
+                    if (liveStreamUser !== developerId) {
+                      setLiveStreamUser(developerId);
+                      localStorage.setItem("liveStreamUser", developerId);
+                    }
+                    setActiveTab("livestream");
+                  }}
+                >
+                  <span className="live-red-dot"></span>
+                  <span>Live Stream</span>
+                </Button>
+              </p>
+            </>
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Wallet className="w-5 h-5" />
-          <span className="font-mono">
-            {walletAddress
-              ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
-              : "Loading wallet..."}
-          </span>
-          {walletAddress && (
-            <Button variant="outline" size="sm" onClick={copyWallet}>
-              <Copy className="w-4 h-4" />
-            </Button>
-          )}
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" title="Wallet address">
+                <Wallet className="w-5 h-5" />
+                <span className="font-mono">
+                  {walletAddress
+                    ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+                    : "Loading wallet..."}
+                </span>
+                {walletAddress && (
+                  <Button variant="outline" size="sm" onClick={copyWallet}>
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2" title="Wallet private key">
+              <Lock className="w-5 h-5" />
+              <span className="font-mono">
+                {walletPrivateKey
+                  ? `${walletPrivateKey.slice(0, 6)}...${walletPrivateKey.slice(-4)}`
+                  : "Loading wallet private key..."}
+              </span>
+              {walletPrivateKey && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyWalletPrivateKey}
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2" title="Contract address">
+              <Coins className="w-5 h-5" />
+              <span className="font-mono">
+                {`${contractAddress.slice(0, 6)}...${contractAddress.slice(-4)}`}
+              </span>
+              <Button variant="outline" size="sm" onClick={copyContractAddress}>
+                <Copy className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
