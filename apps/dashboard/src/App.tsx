@@ -8,15 +8,7 @@ import {
 } from "./components/ui/card";
 import { Badge } from "./components/ui/badge";
 import { Button } from "./components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "./components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "./components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -34,9 +26,6 @@ import {
   GitPullRequest,
   Ticket,
   Trophy,
-  Wallet,
-  Copy,
-  TrendingUp,
   Users,
   DollarSign,
   Target,
@@ -47,7 +36,6 @@ import {
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -55,6 +43,7 @@ import {
 } from "./components/ui/pagination";
 import { UnconnectedView } from "./components/UnconnectedView";
 import { DeveloperDashboard } from "./components/DeveloperDashboard";
+import { LiveStream } from "./components/LiveStream";
 import { Reward } from "./types/reward";
 // @ts-expect-error - NPM imports in Deno not fully supported by TypeScript
 import { createClient } from "@jsr/supabase__supabase-js";
@@ -254,9 +243,20 @@ const RewardCard = ({ reward, onApprove, userRole }: any) => {
   );
 };
 
-const ManagerDashboard = () => {
+type ManagerDashboardProps = {
+  liveStreamUser: string;
+  setLiveStreamUser: (user: string) => void;
+  setActiveTab: (tab: string) => void;
+  developers: any[];
+};
+
+const ManagerDashboard = ({
+  liveStreamUser,
+  setLiveStreamUser,
+  setActiveTab,
+  developers,
+}: ManagerDashboardProps) => {
   const [rewards, setRewards] = useState([]);
-  const [developers, setDevelopers] = useState([]);
   const [userRole, setUserRole] = useState<"manager" | "hr">(() => {
     const saved = localStorage.getItem("manager_userRole");
     return (saved as "manager" | "hr") || "manager";
@@ -270,7 +270,6 @@ const ManagerDashboard = () => {
   const [order, setOrder] = useState(() => {
     return localStorage.getItem("manager_order") || "desc";
   });
-  console.log(order);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
@@ -287,6 +286,11 @@ const ManagerDashboard = () => {
   // Persist filterDeveloperId to localStorage
   useEffect(() => {
     localStorage.setItem("manager_filterDeveloperId", filterDeveloperId);
+
+    if (filterDeveloperId !== "all") {
+      setLiveStreamUser(filterDeveloperId);
+      localStorage.setItem("liveStreamUser", filterDeveloperId);
+    }
   }, [filterDeveloperId]);
 
   const fetchRewards = (order: "asc" | "desc" = "desc") => {
@@ -304,7 +308,6 @@ const ManagerDashboard = () => {
         if (error) {
           console.error("Error fetching rewards:", error);
         } else {
-          console.log(rewards);
           setRewards(data || []);
         }
       });
@@ -326,17 +329,6 @@ const ManagerDashboard = () => {
           console.error("Error fetching rewards:", error);
         } else {
           setRewards(data || []);
-        }
-      });
-
-    supabase
-      .from("users")
-      .select("id, name, github_username")
-      .then(({ data, error }) => {
-        if (error) {
-          console.error("Error fetching users:", error);
-        } else {
-          setDevelopers(data || []);
         }
       });
   }, []);
@@ -690,6 +682,10 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [githubId, setGithubId] = useState<string | null>(null);
   const [githubUsername, setGithubUsername] = useState<string | null>(null);
+  const [developers, setDevelopers] = useState([]);
+  const [liveStreamUser, setLiveStreamUser] = useState(() => {
+    return localStorage.getItem("liveStreamUser") || "";
+  });
 
   // Load active tab from localStorage on mount
   useEffect(() => {
@@ -700,11 +696,24 @@ export default function App() {
     ) {
       setActiveTab(savedTab);
     }
+
+    supabase
+      .from("users")
+      .select("id, name, github_username")
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Error fetching users:", error);
+        } else {
+          setDevelopers(data || []);
+        }
+      });
   }, []);
 
   // Save active tab to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem("activeTab", activeTab);
+    if (activeTab !== "livestream") {
+      localStorage.setItem("activeTab", activeTab);
+    }
   }, [activeTab]);
 
   // Check GitHub connection status on app load
@@ -930,89 +939,115 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="border-b bg-white py-6">
-        <div className="container mx-auto">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">
-              GitHub Reward Coin
-            </h1>
-            <div className="flex items-center gap-4">
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant="default"
-                    className="bg-green-100 text-green-800"
-                  >
-                    <Hourglass className="w-3 h-3 mr-1" />
-                    Checking GitHub status...
-                  </Badge>
-                </div>
-              ) : isGitHubConnected ? (
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant="default"
-                    className="bg-green-100 text-green-800"
-                  >
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    GitHub Connected
-                  </Badge>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDisconnectGithub}
-                  >
-                    Disconnect
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant="secondary"
-                    className="bg-yellow-100 text-yellow-800"
-                  >
-                    <Clock className="w-3 h-3 mr-1" />
-                    Not Connected
-                  </Badge>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={handleConnectGithub}
-                    className="bg-black-600 hover:bg-gray-700"
-                  >
-                    Connect GitHub
-                  </Button>
-                </div>
-              )}
+      <div className="border-b bg-white py-6 header-container">
+        <div className="container mx-auto header-container-inside">
+          <img
+            src="https://uvkwcralkuwqocgsmcap.supabase.co/storage/v1/object/public/images/codekudos.png"
+            alt="GitHub Reward Coin"
+            className="w-10 h-10 mr-4 logo"
+          />
+          <div className="header-content">
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-2xl font-bold text-gray-900">
+                GitHub Reward
+              </h1>
+              <div className="flex items-center gap-4">
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="default"
+                      className="bg-green-100 text-green-800"
+                    >
+                      <Hourglass className="w-3 h-3 mr-1" />
+                      Checking GitHub status...
+                    </Badge>
+                  </div>
+                ) : isGitHubConnected ? (
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="default"
+                      className="bg-green-100 text-green-800"
+                    >
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      GitHub Connected
+                    </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDisconnectGithub}
+                    >
+                      Disconnect
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="secondary"
+                      className="bg-yellow-100 text-yellow-800"
+                    >
+                      <Clock className="w-3 h-3 mr-1" />
+                      Not Connected
+                    </Badge>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleConnectGithub}
+                      className="bg-black-600 hover:bg-gray-700"
+                    >
+                      Connect GitHub
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
+              <TabsList className={`grid w-full max-w-2xl grid-cols-3`}>
+                <TabsTrigger value="manager">Manager View</TabsTrigger>
+                <TabsTrigger
+                  value={isGitHubConnected ? "developer" : "unconnected"}
+                >
+                  Developer View
+                </TabsTrigger>
+                <TabsTrigger value="livestream">Live Stream</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="w-full"
-          >
-            <TabsList className={`grid w-full max-w-2xl grid-cols-2`}>
-              <TabsTrigger value="manager">Manager View</TabsTrigger>
-              <TabsTrigger
-                value={isGitHubConnected ? "developer" : "unconnected"}
-              >
-                Developer View
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
         </div>
       </div>
 
       <div className="container mx-auto">
-        {activeTab === "manager" && <ManagerDashboard />}
+        {activeTab === "manager" && (
+          <ManagerDashboard
+            liveStreamUser={liveStreamUser}
+            setLiveStreamUser={setLiveStreamUser}
+            setActiveTab={setActiveTab}
+            developers={developers}
+          />
+        )}
         {activeTab === "developer" && (
           <DeveloperDashboard
             supabase={supabase}
             githubId={githubId}
             githubUsername={githubUsername}
+            liveStreamUser={liveStreamUser}
+            setLiveStreamUser={setLiveStreamUser}
+            setActiveTab={setActiveTab}
           />
         )}
         {activeTab === "unconnected" && (
           <UnconnectedView onConnect={handleConnectGithub} />
+        )}
+        {activeTab === "livestream" && (
+          <LiveStream
+            supabase={supabase}
+            liveStreamUser={liveStreamUser}
+            setLiveStreamUser={setLiveStreamUser}
+            developers={developers}
+          />
         )}
       </div>
       <Toaster />

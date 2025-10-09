@@ -1263,6 +1263,57 @@
     border-bottom-left-radius: 0;
   }
 
+  .header-container {
+    overflow: hidden;
+  }
+
+  .header-container-inside {
+    display: flex;
+    height: 90px;
+  }
+
+  .logo {
+    width: 154px;
+    height: 154px;
+    margin-top: -24px;
+  }
+
+  .header-content {
+    flex: 1;
+  }
+
+  .see-live {
+    display: inline-block;
+    cursor: pointer;
+    padding: 0 10px;
+    font-size: 0.75em;
+    margin-left: 10px;
+  }
+
+  .live-red-dot {
+    width: 10px;
+    height: 10px;
+    display: inline-block;
+    background-color: red;
+    border-radius: 50%;
+    animation: blink 3s infinite;
+    margin-right: 5px;
+  }
+
+  @keyframes blink {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+
+  .radio-select button > * {
+    margin-right: 10px;
+  }
+
   .opacity-50 {
     opacity: 0.5;
   }
