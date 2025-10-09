@@ -1,19 +1,14 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from './components/ui/card';
-import {Badge} from './components/ui/badge';
-import {Button} from './components/ui/button';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from './components/ui/tabs';
+} from "./components/ui/card";
+import { Badge } from "./components/ui/badge";
+import { Button } from "./components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -21,16 +16,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from './components/ui/table';
+} from "./components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from './components/ui/select';
-import {Separator} from './components/ui/separator';
-import {toast} from 'sonner@2.0.3';
+} from "./components/ui/select";
+import { Separator } from "./components/ui/separator";
+import { toast } from "sonner";
+import { Toaster } from "./components/ui/sonner";
 import {
   CheckCircle,
   Clock,
@@ -44,52 +40,56 @@ import {
   Users,
   DollarSign,
   Target,
-} from 'lucide-react';
-import {UnconnectedView} from './components/UnconnectedView';
-import {Reward} from './types/reward';
-import {createClient} from '@jsr/supabase__supabase-js'
-import * as supabaseInfo from './utils/supabase/info'
+} from "lucide-react";
+import { UnconnectedView } from "./components/UnconnectedView";
+import { Reward } from "./types/reward";
+// @ts-expect-error - NPM imports in Deno not fully supported by TypeScript
+import { createClient } from "@jsr/supabase__supabase-js";
+import * as supabaseInfo from "./utils/supabase/info";
 
 // Create a single supabase client for interacting with your database
-const supabase = createClient(`https://${supabaseInfo.projectId}.supabase.co`, supabaseInfo.publicAnonKey)
+const supabase = createClient(
+  `https://${supabaseInfo.projectId}.supabase.co`,
+  supabaseInfo.publicAnonKey,
+);
 
 const mockDeveloperRewards = [
   {
     id: 1,
     tokens: 850,
-    status: 'pending',
-    period: 'January 2024',
-    activities: ['15 commits', '3 PRs', '8 tickets'],
-    createdAt: '2024-01-15',
+    status: "pending",
+    period: "January 2024",
+    activities: ["15 commits", "3 PRs", "8 tickets"],
+    createdAt: "2024-01-15",
   },
   {
     id: 2,
     tokens: 1200,
-    status: 'completed',
-    period: 'December 2023',
-    activities: ['20 commits', '4 PRs', '10 tickets'],
-    createdAt: '2023-12-15',
-    distributedAt: '2023-12-28',
+    status: "completed",
+    period: "December 2023",
+    activities: ["20 commits", "4 PRs", "10 tickets"],
+    createdAt: "2023-12-15",
+    distributedAt: "2023-12-28",
   },
   {
     id: 3,
     tokens: 950,
-    status: 'completed',
-    period: 'November 2023',
-    activities: ['18 commits', '3 PRs', '7 tickets'],
-    createdAt: '2023-11-15',
-    distributedAt: '2023-11-30',
+    status: "completed",
+    period: "November 2023",
+    activities: ["18 commits", "3 PRs", "7 tickets"],
+    createdAt: "2023-11-15",
+    distributedAt: "2023-11-30",
   },
 ];
 
 const getActivityIcon = (type: string) => {
   switch (type) {
-    case 'commit':
-      return <GitCommit className="w-4 h-4"/>;
-    case 'pr':
-      return <GitPullRequest className="w-4 h-4"/>;
-    case 'ticket':
-      return <Ticket className="w-4 h-4"/>;
+    case "commit":
+      return <GitCommit className="w-4 h-4" />;
+    case "pr":
+      return <GitPullRequest className="w-4 h-4" />;
+    case "ticket":
+      return <Ticket className="w-4 h-4" />;
     default:
       return null;
   }
@@ -109,12 +109,10 @@ const getStatusBadge = (reward: any) => {
   }
 };
 
-const RewardCard = ({reward, onApprove, userRole}: any) => {
+const RewardCard = ({ reward, onApprove, userRole }: any) => {
   const canApprove =
-    (userRole === 'manager' && !reward.managerApproval) ||
-    (userRole === 'hr' &&
-      reward.managerApproval &&
-      !reward.hrApproval);
+    (userRole === "manager" && !reward.managerApproval) ||
+    (userRole === "hr" && reward.managerApproval && !reward.hrApproval);
 
   return (
     <Card className="mb-4">
@@ -126,58 +124,53 @@ const RewardCard = ({reward, onApprove, userRole}: any) => {
               {getStatusBadge(reward)}
             </CardTitle>
             <CardDescription>
-              Period: {reward.period} • Wallet:{' '}
-              {reward.developer.walletAddress}
+              Period: {reward.period} • Wallet: {reward.developer.walletAddress}
             </CardDescription>
           </div>
           <div className="text-right">
             <div className="font-semibold text-2xl text-blue-600">
               {reward.totalTokens} CKC
             </div>
-            <div className="text-sm text-gray-500">
-              Total Reward
-            </div>
+            <div className="text-sm text-gray-500">Total Reward</div>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {reward.activities.map(
-              (activity: any, index: number) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-2 p-2 bg-gray-50 rounded"
-                >
-                  {getActivityIcon(activity.type)}
-                  <div>
-                    <div className="font-medium">
-                      {activity.count} {activity.type}s
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {activity.points} points • {activity.repository}
-                    </div>
+            {reward.activities.map((activity: any, index: number) => (
+              <div
+                key={index}
+                className="flex items-center gap-2 p-2 bg-gray-50 rounded"
+              >
+                {getActivityIcon(activity.type)}
+                <div>
+                  <div className="font-medium">
+                    {activity.count} {activity.type}s
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {activity.points} points • {activity.repository}
                   </div>
                 </div>
-              ),
-            )}
+              </div>
+            ))}
           </div>
 
-          <Separator/>
+          <Separator />
 
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
                 {reward.managerApproval?.approved ? (
-                  <CheckCircle className="w-4 h-4 text-green-500"/>
+                  <CheckCircle className="w-4 h-4 text-green-500" />
                 ) : (
-                  <Clock className="w-4 h-4 text-gray-400"/>
+                  <Clock className="w-4 h-4 text-gray-400" />
                 )}
                 <span
                   className={
                     reward.managerApproval?.approved
-                      ? 'text-green-600'
-                      : 'text-gray-500'
+                      ? "text-green-600"
+                      : "text-gray-500"
                   }
                 >
                   Manager Approval
@@ -185,15 +178,15 @@ const RewardCard = ({reward, onApprove, userRole}: any) => {
               </div>
               <div className="flex items-center gap-1">
                 {reward.hrApproval?.approved ? (
-                  <CheckCircle className="w-4 h-4 text-green-500"/>
+                  <CheckCircle className="w-4 h-4 text-green-500" />
                 ) : (
-                  <Clock className="w-4 h-4 text-gray-400"/>
+                  <Clock className="w-4 h-4 text-gray-400" />
                 )}
                 <span
                   className={
                     reward.hrApproval?.approved
-                      ? 'text-green-600'
-                      : 'text-gray-500'
+                      ? "text-green-600"
+                      : "text-gray-500"
                   }
                 >
                   HR Approval
@@ -206,8 +199,7 @@ const RewardCard = ({reward, onApprove, userRole}: any) => {
                 onClick={() => onApprove(reward.id, userRole)}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                Approve (
-                {userRole === 'manager' ? 'Manager' : 'HR'})
+                Approve ({userRole === "manager" ? "Manager" : "HR"})
               </Button>
             )}
           </div>
@@ -219,79 +211,72 @@ const RewardCard = ({reward, onApprove, userRole}: any) => {
 
 const ManagerDashboard = () => {
   const [rewards, setRewards] = useState([]);
-  const [userRole, setUserRole] = useState<'manager' | 'hr'>('manager');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [userRole, setUserRole] = useState<"manager" | "hr">("manager");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   useEffect(() => {
-    supabase.from('rewards')
-      .select(`
+    supabase
+      .from("rewards")
+      .select(
+        `
         *,
         developer:users!developerId(id, name, email, walletAddress:wallet_address),
         activities:reward_activities(*)
-      `)
-      .then(({data, error}) => {
+      `,
+      )
+      .then(({ data, error }) => {
         if (error) {
-          console.error('Error fetching rewards:', error);
+          console.error("Error fetching rewards:", error);
         } else {
-          console.log('DATA', data)
+          console.log("DATA", data);
           setRewards(data || []);
         }
       });
-  }, [])
+  }, []);
 
   const handleApprove = (rewardId: number, role: string) => {
     setRewards((prevRewards) =>
       prevRewards.map((reward) =>
         reward.id === rewardId
           ? {
-            ...reward,
-            [role === 'manager'
-              ? 'managerApproval'
-              : 'hrApproval']: true,
-          }
+              ...reward,
+              [role === "manager" ? "managerApproval" : "hrApproval"]: true,
+            }
           : reward,
       ),
     );
     toast.success(
-      `Reward approved by ${role === 'manager' ? 'Manager' : 'HR Manager'}`,
+      `Reward approved by ${role === "manager" ? "Manager" : "HR Manager"}`,
     );
   };
 
   const filteredRewards = rewards.filter((reward) => {
-    if (filterStatus === 'pending-manager')
-      return !reward.managerApproval;
-    if (filterStatus === 'pending-hr')
+    if (filterStatus === "pending-manager") return !reward.managerApproval;
+    if (filterStatus === "pending-hr")
       return reward.managerApproval && !reward.hrApproval;
-    if (filterStatus === 'approved') return reward.hrApproval;
+    if (filterStatus === "approved") return reward.hrApproval;
     return true;
   });
 
   const stats = {
     totalPending: rewards.filter((r) => !r.hrApproval).length,
-    totalTokens: rewards.reduce(
-      (sum, r) => sum + r.totalTokens,
-      0,
-    ),
-    activeDevelopers: new Set(rewards.map((r) => r.developerId))
-      .size,
-    completedThisMonth: rewards.filter((r) => r.hrApproval)
-      .length,
+    totalTokens: rewards.reduce((sum, r) => sum + r.totalTokens, 0),
+    activeDevelopers: new Set(rewards.map((r) => r.developerId)).size,
+    completedThisMonth: rewards.filter((r) => r.hrApproval).length,
   };
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">
-            Manager Dashboard
-          </h1>
+          <h1 className="text-3xl font-bold">Manager Dashboard</h1>
           <p className="text-gray-600">
             CodeKudos Coin (CKC) Reward Management
           </p>
         </div>
         <Select value={userRole} onValueChange={setUserRole}>
           <SelectTrigger className="w-40">
-            <SelectValue/>
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="manager">Manager</SelectItem>
@@ -305,14 +290,10 @@ const ManagerDashboard = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-orange-500"/>
+              <Clock className="w-5 h-5 text-orange-500" />
               <div>
-                <div className="text-2xl font-bold">
-                  {stats.totalPending}
-                </div>
-                <div className="text-sm text-gray-500">
-                  Pending Approvals
-                </div>
+                <div className="text-2xl font-bold">{stats.totalPending}</div>
+                <div className="text-sm text-gray-500">Pending Approvals</div>
               </div>
             </div>
           </CardContent>
@@ -320,14 +301,12 @@ const ManagerDashboard = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-blue-500"/>
+              <DollarSign className="w-5 h-5 text-blue-500" />
               <div>
                 <div className="text-2xl font-bold">
                   {stats.totalTokens.toLocaleString()}
                 </div>
-                <div className="text-sm text-gray-500">
-                  Total CKC Tokens
-                </div>
+                <div className="text-sm text-gray-500">Total CKC Tokens</div>
               </div>
             </div>
           </CardContent>
@@ -335,14 +314,12 @@ const ManagerDashboard = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-green-500"/>
+              <Users className="w-5 h-5 text-green-500" />
               <div>
                 <div className="text-2xl font-bold">
                   {stats.activeDevelopers}
                 </div>
-                <div className="text-sm text-gray-500">
-                  Active Developers
-                </div>
+                <div className="text-sm text-gray-500">Active Developers</div>
               </div>
             </div>
           </CardContent>
@@ -350,7 +327,7 @@ const ManagerDashboard = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Target className="w-5 h-5 text-purple-500"/>
+              <Target className="w-5 h-5 text-purple-500" />
               <div>
                 <div className="text-2xl font-bold">
                   {stats.completedThisMonth}
@@ -366,21 +343,14 @@ const ManagerDashboard = () => {
 
       {/* Filter Controls */}
       <div className="flex gap-2">
-        <Select
-          value={filterStatus}
-          onValueChange={setFilterStatus}
-        >
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-48">
-            <SelectValue/>
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Rewards</SelectItem>
-            <SelectItem value="pending-manager">
-              Pending Manager
-            </SelectItem>
-            <SelectItem value="pending-hr">
-              Pending HR
-            </SelectItem>
+            <SelectItem value="pending-manager">Pending Manager</SelectItem>
+            <SelectItem value="pending-hr">Pending HR</SelectItem>
             <SelectItem value="approved">Approved</SelectItem>
           </SelectContent>
         </Select>
@@ -391,7 +361,7 @@ const ManagerDashboard = () => {
         {filteredRewards.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <Trophy className="w-12 h-12 mx-auto text-gray-400 mb-4"/>
+              <Trophy className="w-12 h-12 mx-auto text-gray-400 mb-4" />
               <p className="text-gray-500">
                 No rewards found for the selected filter.
               </p>
@@ -412,43 +382,128 @@ const ManagerDashboard = () => {
   );
 };
 
-const DeveloperDashboard = () => {
-  const [walletAddress] = useState('0x1234...5678');
-  const developerRewards = mockDeveloperRewards;
+const DeveloperDashboard = ({
+  githubId,
+  githubUsername,
+}: {
+  githubId: string | null;
+  githubUsername: string | null;
+}) => {
+  const [walletAddress, setWalletAddress] = useState<string>("");
+  const [developerRewards, setDeveloperRewards] =
+    useState(mockDeveloperRewards);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load wallet address from localStorage on mount
+  useEffect(() => {
+    const storedWalletAddress = localStorage.getItem("wallet_address");
+    if (storedWalletAddress) {
+      setWalletAddress(storedWalletAddress);
+    }
+  }, []);
+
+  // Fetch user-specific rewards and wallet address from Supabase
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!githubId) return;
+
+      setIsLoading(true);
+      try {
+        // Use the format `${githubUsername}${githubId}` as developerId
+        const developerId = `${githubUsername}${githubId}`;
+
+        // Fetch user's wallet address from users table
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("wallet_address")
+          .eq("id", developerId)
+          .single();
+
+        if (userError) {
+          console.error("Error fetching user data:", userError);
+        } else if (userData?.wallet_address) {
+          setWalletAddress(userData.wallet_address);
+          // Store wallet address locally
+          localStorage.setItem("wallet_address", userData.wallet_address);
+        }
+
+        // Fetch user's rewards
+        const { data: rewardsData, error: rewardsError } = await supabase
+          .from("rewards")
+          .select(
+            `
+            *,
+            activities:reward_activities(*)
+          `,
+          )
+          .eq("developerId", developerId)
+          .order("created_at", { ascending: false });
+
+        if (rewardsError) {
+          console.error("Error fetching user rewards:", rewardsError);
+        } else {
+          console.log("User rewards data:", rewardsData);
+          setDeveloperRewards(rewardsData || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (githubId) {
+      fetchUserData();
+    }
+  }, [githubId, githubUsername]);
 
   const totalRewards = developerRewards
-    .filter((r) => r.status === 'completed')
+    .filter((r) => r.status === "completed")
     .reduce((sum, r) => sum + r.tokens, 0);
   const pendingRewards = developerRewards
-    .filter((r) => r.status === 'pending')
+    .filter((r) => r.status === "pending")
     .reduce((sum, r) => sum + r.tokens, 0);
 
   const copyWallet = () => {
     navigator.clipboard.writeText(walletAddress);
-    toast.success('Wallet address copied to clipboard');
+    toast.success("Wallet address copied to clipboard");
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading your rewards...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">
-            Developer Dashboard
-          </h1>
-          <p className="text-gray-600">
-            Your CodeKudos Coin (CKC) Rewards
-          </p>
+          <h1 className="text-3xl font-bold">Developer Dashboard</h1>
+          <p className="text-gray-600">Your CodeKudos Coin (CKC) Rewards</p>
+          {githubUsername && (
+            <p className="text-sm text-blue-600">Welcome, @{githubUsername}!</p>
+          )}
         </div>
         <div className="flex items-center gap-2">
-          <Wallet className="w-5 h-5"/>
-          <span className="font-mono">{walletAddress}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={copyWallet}
-          >
-            <Copy className="w-4 h-4"/>
-          </Button>
+          <Wallet className="w-5 h-5" />
+          <span className="font-mono">
+            {walletAddress
+              ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+              : "Loading wallet..."}
+          </span>
+          {walletAddress && (
+            <Button variant="outline" size="sm" onClick={copyWallet}>
+              <Copy className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -457,14 +512,12 @@ const DeveloperDashboard = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-yellow-500"/>
+              <Trophy className="w-5 h-5 text-yellow-500" />
               <div>
                 <div className="text-2xl font-bold">
                   {totalRewards.toLocaleString()}
                 </div>
-                <div className="text-sm text-gray-500">
-                  Total CKC Earned
-                </div>
+                <div className="text-sm text-gray-500">Total CKC Earned</div>
               </div>
             </div>
           </CardContent>
@@ -472,14 +525,12 @@ const DeveloperDashboard = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-orange-500"/>
+              <Clock className="w-5 h-5 text-orange-500" />
               <div>
                 <div className="text-2xl font-bold">
                   {pendingRewards.toLocaleString()}
                 </div>
-                <div className="text-sm text-gray-500">
-                  Pending CKC
-                </div>
+                <div className="text-sm text-gray-500">Pending CKC</div>
               </div>
             </div>
           </CardContent>
@@ -487,14 +538,12 @@ const DeveloperDashboard = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-green-500"/>
+              <TrendingUp className="w-5 h-5 text-green-500" />
               <div>
                 <div className="text-2xl font-bold">
                   {developerRewards.length}
                 </div>
-                <div className="text-sm text-gray-500">
-                  Total Rewards
-                </div>
+                <div className="text-sm text-gray-500">Total Rewards</div>
               </div>
             </div>
           </CardContent>
@@ -523,22 +572,18 @@ const DeveloperDashboard = () => {
             <TableBody>
               {developerRewards.map((reward) => (
                 <TableRow key={reward.id}>
-                  <TableCell className="font-medium">
-                    {reward.period}
-                  </TableCell>
+                  <TableCell className="font-medium">{reward.period}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {reward.activities.map(
-                        (activity, index) => (
-                          <Badge
-                            key={index}
-                            variant="outline"
-                            className="text-xs"
-                          >
-                            {activity}
-                          </Badge>
-                        ),
-                      )}
+                      {reward.activities.map((activity, index) => (
+                        <Badge
+                          key={index}
+                          variant="outline"
+                          className="text-xs"
+                        >
+                          {activity}
+                        </Badge>
+                      ))}
                     </div>
                   </TableCell>
                   <TableCell className="font-bold text-blue-600">
@@ -547,18 +592,14 @@ const DeveloperDashboard = () => {
                   <TableCell>
                     <Badge
                       variant={
-                        reward.status === 'completed'
-                          ? 'default'
-                          : 'secondary'
+                        reward.status === "completed" ? "default" : "secondary"
                       }
                     >
-                      {reward.status === 'completed'
-                        ? 'Completed'
-                        : 'Pending'}
+                      {reward.status === "completed" ? "Completed" : "Pending"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-gray-500">
-                    {reward.status === 'completed'
+                    {reward.status === "completed"
                       ? reward.distributedAt
                       : reward.createdAt}
                   </TableCell>
@@ -573,7 +614,116 @@ const DeveloperDashboard = () => {
 };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('manager');
+  const [activeTab, setActiveTab] = useState("manager");
+  const [isGitHubConnected, setIsGitHubConnected] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [githubId, setGithubId] = useState<string | null>(null);
+  const [githubUsername, setGithubUsername] = useState<string | null>(null);
+
+  // Load active tab from localStorage on mount
+  useEffect(() => {
+    const savedTab = localStorage.getItem("activeTab");
+    if (
+      savedTab &&
+      ["manager", "developer", "unconnected"].includes(savedTab)
+    ) {
+      setActiveTab(savedTab);
+    }
+  }, []);
+
+  // Save active tab to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("activeTab", activeTab);
+  }, [activeTab]);
+
+  // Check GitHub connection status on app load
+  useEffect(() => {
+    const checkGitHubStatus = async () => {
+      try {
+        // Check if user is already connected by calling the connect endpoint
+        const serverUrl =
+          (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:54321";
+        const response = await fetch(`${serverUrl}/functions/v1/connect`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (response.ok) {
+          // If we can access the endpoint, check for user data
+          // For now, we'll use localStorage to track connection status
+          const githubStatus = localStorage.getItem("github_connected");
+          const storedGithubId = localStorage.getItem("github_id");
+          const storedGithubUsername = localStorage.getItem("github_username");
+          const connected = githubStatus === "true";
+
+          setIsGitHubConnected(connected);
+          setGithubId(storedGithubId);
+          setGithubUsername(storedGithubUsername);
+
+          // Set initial tab based on connection status
+          if (connected) {
+            if (activeTab === "unconnected") {
+              setActiveTab("developer");
+            }
+          } else {
+            if (activeTab === "developer") {
+              setActiveTab("unconnected");
+            }
+          }
+        }
+      } catch (error) {
+        console.log("GitHub status check failed:", error);
+        setIsGitHubConnected(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkGitHubStatus();
+  }, []);
+
+  // Handle OAuth callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const githubConnected = urlParams.get("github_connected");
+    const githubError = urlParams.get("github_error");
+
+    if (githubConnected === "true") {
+      // Extract GitHub ID and username from URL parameters
+      const githubIdParam = urlParams.get("github_id");
+      const githubUsernameParam = urlParams.get("github_username");
+
+      setIsGitHubConnected(true);
+      setGithubId(githubIdParam);
+      setGithubUsername(githubUsernameParam);
+      localStorage.setItem("github_connected", "true");
+      if (githubIdParam) localStorage.setItem("github_id", githubIdParam);
+      if (githubUsernameParam)
+        localStorage.setItem("github_username", githubUsernameParam);
+      setActiveTab("developer");
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      // Show toast after a small delay to ensure UI has updated
+      setTimeout(() => {
+        toast.success(
+          `GitHub account connected successfully! Welcome @${githubUsernameParam}`,
+          { duration: 3000 },
+        );
+      }, 100);
+    } else if (githubError) {
+      toast.error(
+        `GitHub connection failed: ${decodeURIComponent(githubError)}`,
+        { duration: 5000 },
+      );
+      setIsGitHubConnected(false);
+      localStorage.setItem("github_connected", "false");
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   const handleConnectGithub = () => {
     // Redirect to server-side GitHub OAuth endpoint
@@ -582,24 +732,80 @@ export default function App() {
     window.location.href = `${serverUrl}/functions/v1/connect/github`;
   };
 
+  const handleDisconnectGithub = () => {
+    // Clear GitHub connection status
+    setIsGitHubConnected(false);
+    setGithubId(null);
+    setGithubUsername(null);
+    localStorage.setItem("github_connected", "false");
+    localStorage.removeItem("github_id");
+    localStorage.removeItem("github_username");
+    setActiveTab("unconnected");
+    toast.success("GitHub account disconnected", {
+      duration: 3000,
+    });
+  };
+
+  // Show loading state while checking GitHub status
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking GitHub connection...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="border-b bg-white py-6">
         <div className="container mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold text-gray-900">
+              GitHub Reward Coin
+            </h1>
+            <div className="flex items-center gap-4">
+              {isGitHubConnected ? (
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant="default"
+                    className="bg-green-100 text-green-800"
+                  >
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    GitHub Connected
+                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDisconnectGithub}
+                  >
+                    Disconnect
+                  </Button>
+                </div>
+              ) : (
+                <Badge
+                  variant="secondary"
+                  className="bg-yellow-100 text-yellow-800"
+                >
+                  <Clock className="w-3 h-3 mr-1" />
+                  Not Connected
+                </Badge>
+              )}
+            </div>
+          </div>
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-3 max-w-2xl">
-              <TabsTrigger value="manager">
-                Manager View
-              </TabsTrigger>
-              <TabsTrigger value="developer">
+            <TabsList className={`grid w-full max-w-2xl grid-cols-2`}>
+              <TabsTrigger value="manager">Manager View</TabsTrigger>
+              <TabsTrigger
+                value={isGitHubConnected ? "developer" : "unconnected"}
+              >
                 Developer View
-              </TabsTrigger>
-              <TabsTrigger value="unconnected">
-                Unconnected View
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -607,12 +813,18 @@ export default function App() {
       </div>
 
       <div className="container mx-auto">
-        {activeTab === 'manager' && <ManagerDashboard/>}
-        {activeTab === 'developer' && <DeveloperDashboard/>}
-        {activeTab === 'unconnected' && (
-          <UnconnectedView onConnect={handleConnectGithub}/>
+        {activeTab === "manager" && <ManagerDashboard />}
+        {activeTab === "developer" && (
+          <DeveloperDashboard
+            githubId={githubId}
+            githubUsername={githubUsername}
+          />
+        )}
+        {activeTab === "unconnected" && (
+          <UnconnectedView onConnect={handleConnectGithub} />
         )}
       </div>
+      <Toaster />
     </div>
   );
 }

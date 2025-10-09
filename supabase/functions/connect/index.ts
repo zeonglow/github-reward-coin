@@ -263,8 +263,12 @@ app.get("/connect/github/callback", async (c: Context) => {
       }
     }
 
-    // Redirect to frontend with success
-    return c.redirect(`${Deno.env.get("FRONTEND_URL")}?github_connected=true`);
+    // Redirect to frontend with success and user info
+    const frontendUrl = new URL(Deno.env.get("FRONTEND_URL")!);
+    frontendUrl.searchParams.set("github_connected", "true");
+    frontendUrl.searchParams.set("github_id", githubUser.id.toString());
+    frontendUrl.searchParams.set("github_username", githubUser.login);
+    return c.redirect(frontendUrl.toString());
   } catch (error) {
     console.error("GitHub OAuth callback error:", error);
     return c.redirect(
