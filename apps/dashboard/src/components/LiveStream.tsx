@@ -78,6 +78,9 @@ export function LiveStream({
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [liveEvents, setLiveEvents] = useState([]);
+  const [selectedDeveloper, setSelectedDeveloper] = useState(() => {
+    return localStorage.getItem("liveStreamUser") || developers[0].id;
+  });
 
   // Debouncing and duplicate prevention
   const processedEvents = useRef(new Set());
@@ -145,6 +148,7 @@ export function LiveStream({
           console.log("payload", payload);
           console.log("payload", payload.eventType);
           console.log("payload.new", payload.new);
+          console.log("liveStreamUser", liveStreamUser);
           if (
             (payload.eventType === "UPDATE" ||
               payload.eventType === "INSERT") &&
@@ -249,72 +253,66 @@ export function LiveStream({
   }, [debouncedUpdate]);
 
   useEffect(() => {
-    let selectedUser = liveStreamUser;
-    if (selectedUser === "") {
-      selectedUser = developers[0].id;
-      setLiveStreamUser(selectedUser);
-      localStorage.setItem("liveStreamUser", selectedUser);
-    }
+    setLiveStreamUser(selectedDeveloper);
+    localStorage.setItem("liveStreamUser", selectedDeveloper);
 
-    if (selectedUser !== "") {
-      supabase
-        .from("rewards")
-        .select(
-          `*,
-          developer:users!developerId(id, github_username, name, email),
-          activities:reward_activities(*)`,
-        )
-        .eq("developerId", selectedUser)
-        .limit(20)
-        .order("createdAt", {
-          ascending: false,
-        })
-        .then(({ data, error }) => {
-          if (error) {
-            console.error("Error fetching rewards:", error);
-          } else {
-            rewardsRef.current = data || [];
+    supabase
+      .from("rewards")
+      .select(
+        `*,
+        developer:users!developerId(id, github_username, name, email),
+        activities:reward_activities(*)`,
+      )
+      .eq("developerId", selectedDeveloper)
+      .limit(20)
+      .order("createdAt", {
+        ascending: false,
+      })
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Error fetching rewards:", error);
+        } else {
+          rewardsRef.current = data || [];
 
-            const liveEvents = data.map((r) => {
-              let type = "commit";
-              let message = "New commit made";
-              if (r.status === "manager_approved") {
-                type = "manager_approval";
-                message = "Manager approved your commit!";
-              }
-              if (r.status === "fully_approved") {
-                type = "distribution";
-                message = `Manager and HR approved your commit! ${r.totalTokens} CKC being distributed to your wallet!`;
-              }
-              if (r.status === "distributed") {
-                type = "completed";
-                message = "Reward cycle completed!";
-              }
-              if (r.status === "pending" && r.activities?.length > 0) {
-                message =
-                  "New commit made: " +
-                  r.activities?.map((a) => a.description).join(", ");
-              }
-              return {
-                id: r.id,
-                rewardId: r.id,
-                type,
-                message,
-                repo: r.activities?.[0]?.repository || "",
-                time: r.updatedAt,
-                tokens: r.totalTokens,
-                status: r.status,
-                managerApproval: r.managerApproval,
-                hrApproval: r.hrApproval,
-              };
-            });
-            // Set initial events
-            setLiveEvents(liveEvents);
-            liveEventsRef.current = liveEvents;
-          }
-        });
-    }
-  }, [liveStreamUser]);
+          const liveEvents = data.map((r) => {
+            let type = "commit";
+            let message = "New commit made";
+            if (r.status === "manager_approved") {
+              type = "manager_approval";
+              message = "Manager approved your commit!";
+            }
+            if (r.status === "fully_approved") {
+              type = "distribution";
+              message = `Manager and HR approved your commit! ${r.totalTokens} CKC being distributed to your wallet!`;
+            }
+            if (r.status === "distributed") {
+              type = "completed";
+              message = "Reward cycle completed!";
+            }
+            if (r.status === "pending" && r.activities?.length > 0) {
+              message =
+                "New commit made: " +
+                r.activities?.map((a) => a.description).join(", ");
+            }
+            return {
+              id: r.id,
+              rewardId: r.id,
+              type,
+              message,
+              repo: r.activities?.[0]?.repository || "",
+              time: r.updatedAt,
+              tokens: r.totalTokens,
+              status: r.status,
+              managerApproval: r.managerApproval,
+              hrApproval: r.hrApproval,
+            };
+          });
+          // Set initial events
+          setLiveEvents(liveEvents);
+          liveEventsRef.current = liveEvents;
+        }
+      });
+  }, [selectedDeveloper]);
 
   const developer =
     developers.find((d) => d.id === liveStreamUser) || developers[0];
@@ -358,7 +356,10 @@ export function LiveStream({
           {/* Developer Select */}
           <div className="flex flex-col gap-2">
             <Label className="text-sm">Developer:</Label>
-            <Select value={liveStreamUser} onValueChange={setLiveStreamUser}>
+            <Select
+              value={selectedDeveloper}
+              onValueChange={setSelectedDeveloper}
+            >
               <SelectTrigger className="w-64">
                 <SelectValue />
               </SelectTrigger>
