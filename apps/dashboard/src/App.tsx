@@ -41,6 +41,8 @@ import {
   DollarSign,
   Target,
   Hourglass,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import {
   Pagination,
@@ -64,35 +66,6 @@ const supabase = createClient(
   `https://${supabaseInfo.projectId}.supabase.co`,
   supabaseInfo.publicAnonKey,
 );
-
-const mockDeveloperRewards = [
-  {
-    id: 1,
-    tokens: 850,
-    status: "pending",
-    period: "January 2024",
-    activities: ["15 commits", "3 PRs", "8 tickets"],
-    createdAt: "2024-01-15",
-  },
-  {
-    id: 2,
-    tokens: 1200,
-    status: "completed",
-    period: "December 2023",
-    activities: ["20 commits", "4 PRs", "10 tickets"],
-    createdAt: "2023-12-15",
-    distributedAt: "2023-12-28",
-  },
-  {
-    id: 3,
-    tokens: 950,
-    status: "completed",
-    period: "November 2023",
-    activities: ["18 commits", "3 PRs", "7 tickets"],
-    createdAt: "2023-11-15",
-    distributedAt: "2023-11-30",
-  },
-];
 
 const getActivityIcon = (type: string) => {
   switch (type) {
@@ -138,6 +111,22 @@ const getStatusBadge = (reward: any) => {
   }
 };
 
+// Utility function to format date as "time ago"
+const getTimeAgo = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return "just now";
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  if (diffInSeconds < 2592000)
+    return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  if (diffInSeconds < 31536000)
+    return `${Math.floor(diffInSeconds / 2592000)}mo ago`;
+  return `${Math.floor(diffInSeconds / 31536000)}y ago`;
+};
+
 const RewardCard = ({ reward, onApprove, userRole }: any) => {
   const [approving, setApproving] = useState(false);
   const canApprove =
@@ -164,11 +153,19 @@ const RewardCard = ({ reward, onApprove, userRole }: any) => {
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="flex items-center gap-2">
-              {reward.developer.name || reward.developer.email}
+              {reward.developer.name || reward.developer.github_username}
               {getStatusBadge(reward)}
+              <Clock className="w-4 h-4 mr-1" />
+              <span>{getTimeAgo(reward.createdAt.toString())}</span>
             </CardTitle>
             <CardDescription>
-              Period: {reward.period} • Wallet: {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+              Period:
+              {new Date(reward.createdAt).toLocaleDateString("en-US", {
+                month: "long",
+                year: "numeric",
+              })}{" "}
+              • Wallet: {walletAddress.slice(0, 6)}...
+              {walletAddress.slice(-4)}
             </CardDescription>
           </div>
           <div className="text-right">
@@ -259,10 +256,59 @@ const RewardCard = ({ reward, onApprove, userRole }: any) => {
 
 const ManagerDashboard = () => {
   const [rewards, setRewards] = useState([]);
-  const [userRole, setUserRole] = useState<"manager" | "hr">("manager");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [developers, setDevelopers] = useState([]);
+  const [userRole, setUserRole] = useState<"manager" | "hr">(() => {
+    const saved = localStorage.getItem("manager_userRole");
+    return (saved as "manager" | "hr") || "manager";
+  });
+  const [filterStatus, setFilterStatus] = useState(() => {
+    return localStorage.getItem("manager_filterStatus") || "all";
+  });
+  const [filterDeveloperId, setFilterDeveloperId] = useState(() => {
+    return localStorage.getItem("manager_filterDeveloperId") || "all";
+  });
+  const [order, setOrder] = useState(() => {
+    return localStorage.getItem("manager_order") || "desc";
+  });
+  console.log(order);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+
+  // Persist userRole to localStorage
+  useEffect(() => {
+    localStorage.setItem("manager_userRole", userRole);
+  }, [userRole]);
+
+  // Persist filterStatus to localStorage
+  useEffect(() => {
+    localStorage.setItem("manager_filterStatus", filterStatus);
+  }, [filterStatus]);
+
+  // Persist filterDeveloperId to localStorage
+  useEffect(() => {
+    localStorage.setItem("manager_filterDeveloperId", filterDeveloperId);
+  }, [filterDeveloperId]);
+
+  const fetchRewards = (order: "asc" | "desc" = "desc") => {
+    supabase
+      .from("rewards")
+      .select(
+        `*,
+        developer:users!developerId(id, github_username, name, email, walletAddress:wallet_address),
+        activities:reward_activities(*)`,
+      )
+      .order("createdAt", {
+        ascending: order === "asc",
+      })
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Error fetching rewards:", error);
+        } else {
+          console.log(rewards);
+          setRewards(data || []);
+        }
+      });
+  };
 
   useEffect(() => {
     supabase
@@ -270,10 +316,11 @@ const ManagerDashboard = () => {
       .select(
         `
         *,
-        developer:users!developerId(id, name, email, walletAddress:wallet_address),
+        developer:users!developerId(id, github_username, name, email, walletAddress:wallet_address),
         activities:reward_activities(*)
       `,
       )
+      .order("createdAt", { ascending: false })
       .then(({ data, error }) => {
         if (error) {
           console.error("Error fetching rewards:", error);
@@ -281,7 +328,23 @@ const ManagerDashboard = () => {
           setRewards(data || []);
         }
       });
+
+    supabase
+      .from("users")
+      .select("id, name, github_username")
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Error fetching users:", error);
+        } else {
+          setDevelopers(data || []);
+        }
+      });
   }, []);
+
+  useEffect(() => {
+    fetchRewards(order as "asc" | "desc");
+    localStorage.setItem("manager_order", order);
+  }, [order]);
 
   const sendTokenReward = async (
     rewardId: number,
@@ -361,16 +424,30 @@ const ManagerDashboard = () => {
   };
 
   const filteredRewards = rewards.filter((reward) => {
+    const filterByDeveloperId =
+      filterDeveloperId === "all" || reward.developerId === filterDeveloperId;
+
     if (filterStatus === "pending-manager")
       return (
         ["manager_approved", "pending"].includes(reward.status) &&
-        !reward.managerApproval?.approved
+        !reward.managerApproval?.approved &&
+        filterByDeveloperId
       );
+
     if (filterStatus === "pending-hr")
       return (
-        reward.status === "manager_approved" && !reward.hrApproval?.approved
+        reward.status === "manager_approved" &&
+        !reward.hrApproval?.approved &&
+        filterByDeveloperId
       );
-    if (filterStatus === "approved") return reward.status === "fully_approved";
+
+    if (filterStatus === "approved")
+      return reward.status === "fully_approved" && filterByDeveloperId;
+
+    if (!filterByDeveloperId) {
+      return false;
+    }
+
     return true;
   });
 
@@ -484,6 +561,45 @@ const ManagerDashboard = () => {
             <SelectItem value="approved">Approved</SelectItem>
           </SelectContent>
         </Select>
+
+        <Select value={filterDeveloperId} onValueChange={setFilterDeveloperId}>
+          <SelectTrigger className="w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Developers</SelectItem>
+            {developers.map((developer) => (
+              <SelectItem key={developer.id} value={developer.id}>
+                {developer.name || developer.github_username}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="flex">
+          <Button
+            onClick={() => setOrder("asc")}
+            variant={order === "asc" ? "default" : "outline"}
+            className={`rounded-r-none ${
+              order === "asc"
+                ? "bg-blue-600 text-white"
+                : "bg-white border-gray-300"
+            }`}
+          >
+            <ChevronUp className="w-4 h-4" />
+          </Button>
+          <Button
+            onClick={() => setOrder("desc")}
+            variant={order === "desc" ? "default" : "outline"}
+            className={`rounded-l-none border-l-0 ${
+              order === "desc"
+                ? "bg-blue-600 text-white"
+                : "bg-white border-gray-300"
+            }`}
+          >
+            <ChevronDown className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Rewards List */}
@@ -515,29 +631,46 @@ const ManagerDashboard = () => {
                   <PaginationContent>
                     <PaginationItem>
                       <PaginationPrevious
-                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                        size='default' />
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.max(1, prev - 1))
+                        }
+                        className={
+                          currentPage === 1
+                            ? "pointer-events-none opacity-50"
+                            : "cursor-pointer"
+                        }
+                        size="default"
+                      />
                     </PaginationItem>
 
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <PaginationItem key={page}>
-                        <PaginationLink
-                          onClick={() => setCurrentPage(page)}
-                          isActive={currentPage === page}
-                          className="cursor-pointer"
-                          size="icon"
-                        >
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(page)}
+                            isActive={currentPage === page}
+                            className="cursor-pointer"
+                            size="icon"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ),
+                    )}
 
                     <PaginationItem>
                       <PaginationNext
-                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                        size='default'
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(totalPages, prev + 1),
+                          )
+                        }
+                        className={
+                          currentPage === totalPages
+                            ? "pointer-events-none opacity-50"
+                            : "cursor-pointer"
+                        }
+                        size="default"
                       />
                     </PaginationItem>
                   </PaginationContent>
@@ -873,6 +1006,7 @@ export default function App() {
         {activeTab === "manager" && <ManagerDashboard />}
         {activeTab === "developer" && (
           <DeveloperDashboard
+            supabase={supabase}
             githubId={githubId}
             githubUsername={githubUsername}
           />

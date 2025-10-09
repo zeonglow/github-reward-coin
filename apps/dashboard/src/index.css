@@ -1253,6 +1253,16 @@
     text-underline-offset: 4px;
   }
 
+  .rounded-r-none {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .rounded-l-none {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
   .opacity-50 {
     opacity: 0.5;
   }
