@@ -71,7 +71,7 @@ deno task stop-server
 
 ### **stop-server.sh**
 
-- Kills processes on ports 8000, 8001, 8002, 8003
+- Kills processes on ports 54321, 54322, 54323, 54324
 - Cleans up hanging server processes
 - Safe to run multiple times
 

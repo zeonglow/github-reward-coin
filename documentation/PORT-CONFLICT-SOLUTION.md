@@ -41,7 +41,7 @@ yarn server:stop
 
 ### `stop-server.sh`:
 
-- ✅ Kills processes on ports 8000, 8001, 8002, 8003
+- ✅ Kills processes on ports 54321, 54322, 54323, 54324
 - ✅ Cleans up any hanging server processes
 
 ## 🚀 **Quick Start Guide**

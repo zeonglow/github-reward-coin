@@ -40,13 +40,15 @@ import {
   Users,
   DollarSign,
   Target,
+  Hourglass,
 } from "lucide-react";
 import { UnconnectedView } from "./components/UnconnectedView";
+import { DeveloperDashboard } from "./components/DeveloperDashboard";
 import { Reward } from "./types/reward";
 // @ts-expect-error - NPM imports in Deno not fully supported by TypeScript
 import { createClient } from "@jsr/supabase__supabase-js";
 import * as supabaseInfo from "./utils/supabase/info";
-import {faker} from '@faker-js/faker'
+import { faker } from "@faker-js/faker";
 
 // Create a single supabase client for interacting with your database
 const supabase = createClient(
@@ -98,15 +100,15 @@ const getActivityIcon = (type: string) => {
 
 const getStatusBadge = (reward: any) => {
   switch (reward.status) {
-    case 'pending':
+    case "pending":
       return <Badge variant="outline">Pending</Badge>;
-    case 'manager_approved':
+    case "manager_approved":
       if (reward.managerApproval?.approved) {
         return <Badge variant="secondary">HR Review</Badge>;
       } else {
         return <Badge variant="outline">Manager Review</Badge>;
       }
-    case 'fully_approved':
+    case "fully_approved":
       return (
         <Badge variant="default" className="bg-green-500">
           Fully Approved
@@ -117,11 +119,11 @@ const getStatusBadge = (reward: any) => {
   }
 };
 
-const RewardCard = ({reward, onApprove, userRole}: any) => {
+const RewardCard = ({ reward, onApprove, userRole }: any) => {
   const [approving, setApproving] = useState(false);
   const canApprove =
-    (userRole === 'manager' && !reward.managerApproval?.approved) ||
-    (userRole === 'hr' &&
+    (userRole === "manager" && !reward.managerApproval?.approved) ||
+    (userRole === "hr" &&
       reward.managerApproval?.approved &&
       !reward.hrApproval?.approved);
 
@@ -131,9 +133,9 @@ const RewardCard = ({reward, onApprove, userRole}: any) => {
     }
 
     setApproving(true);
-    await onApprove(reward.id, userRole)
+    await onApprove(reward.id, userRole);
     setApproving(false);
-  }
+  };
 
   return (
     <Card className="mb-4">
@@ -220,8 +222,10 @@ const RewardCard = ({reward, onApprove, userRole}: any) => {
                 onClick={() => handleApproval(reward.id, userRole)}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                {approving ? 'Approving...' : `
-                  Approve (${userRole === 'manager' ? 'Manager' : 'HR'})
+                {approving
+                  ? "Approving..."
+                  : `
+                  Approve (${userRole === "manager" ? "Manager" : "HR"})
                 `}
               </Button>
             )}
@@ -257,25 +261,29 @@ const ManagerDashboard = () => {
   }, []);
 
   const handleApprove = async (rewardId: number, role: string) => {
-    const {data: [updatedReward]} = await supabase.from('rewards').update({
-      [role === 'manager'
-              ? 'managerApproval'
-              : 'hrApproval']: {
-        approved: true,
-        approvedAt: new Date().toISOString(),
-        approvedBy: faker.person.fullName()
-      },
-    }).eq('id', rewardId).select();
+    const {
+      data: [updatedReward],
+    } = await supabase
+      .from("rewards")
+      .update({
+        [role === "manager" ? "managerApproval" : "hrApproval"]: {
+          approved: true,
+          approvedAt: new Date().toISOString(),
+          approvedBy: faker.person.fullName(),
+        },
+      })
+      .eq("id", rewardId)
+      .select();
 
     setRewards((prevRewards) =>
-        prevRewards.map((reward) =>
-          reward.id === rewardId
-            ? {
+      prevRewards.map((reward) =>
+        reward.id === rewardId
+          ? {
               ...reward,
               ...updatedReward,
             }
-            : reward,
-        )
+          : reward,
+      ),
     );
     toast.success(
       `Reward approved by ${role === "manager" ? "Manager" : "HR Manager"}`,
@@ -414,280 +422,6 @@ const ManagerDashboard = () => {
   );
 };
 
-const DeveloperDashboard = ({
-  githubId,
-  githubUsername,
-}: {
-  githubId: string | null;
-  githubUsername: string | null;
-}) => {
-  const [walletAddress, setWalletAddress] = useState<string>("");
-  const [developerRewards, setDeveloperRewards] =
-    useState(mockDeveloperRewards);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Load wallet address from localStorage on mount
-  useEffect(() => {
-    const storedWalletAddress = localStorage.getItem("wallet_address");
-    if (storedWalletAddress) {
-      setWalletAddress(storedWalletAddress);
-    }
-  }, []);
-
-  // Fetch user-specific rewards and wallet address from Supabase
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (!githubId) return;
-
-      setIsLoading(true);
-      try {
-        // Use the format `${githubUsername}${githubId}` as developerId
-        const developerId = `${githubUsername}${githubId}`;
-
-        // Fetch user's wallet address from users table
-        const { data: userData, error: userError } = await supabase
-          .from("users")
-          .select("wallet_address")
-          .eq("id", developerId)
-          .single();
-
-        if (userError) {
-          console.error("Error fetching user data:", userError);
-        } else if (userData?.wallet_address) {
-          setWalletAddress(userData.wallet_address);
-          // Store wallet address locally
-          localStorage.setItem("wallet_address", userData.wallet_address);
-        }
-
-        // Fetch user's rewards
-        const { data: rewardsData, error: rewardsError } = await supabase
-          .from("rewards")
-          .select(
-            `
-            *,
-            activities:reward_activities(*)
-          `,
-          )
-          .eq("developerId", developerId)
-          .order("created_at", { ascending: false });
-
-        if (rewardsError) {
-          console.error("Error fetching user rewards:", rewardsError);
-        } else {
-          console.log("User rewards data:", rewardsData);
-          setDeveloperRewards(rewardsData || []);
-        }
-      } catch (error) {
-        console.error("Failed to fetch user data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (githubId) {
-      fetchUserData();
-    }
-  }, [githubId, githubUsername]);
-
-  const totalRewards = developerRewards
-    .filter((r) => r.status === "completed")
-    .reduce((sum, r) => sum + r.tokens, 0);
-  const pendingRewards = developerRewards
-    .filter((r) => r.status === "pending")
-    .reduce((sum, r) => sum + r.tokens, 0);
-
-  const copyWallet = () => {
-    navigator.clipboard.writeText(walletAddress);
-    toast.success("Wallet address copied to clipboard");
-  };
-
-  if (isLoading) {
-    return (
-      <div className="p-6 space-y-6">
-        {/* Header skeleton */}
-        <div className="flex justify-between items-center">
-          <div className="space-y-2">
-            <div className="h-8 w-64 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-4 w-48 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-3 w-32 bg-gray-200 rounded animate-pulse"></div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-5 w-5 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
-          </div>
-        </div>
-
-        {/* Statistics cards skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white p-4 rounded-lg border">
-              <div className="flex items-center gap-2">
-                <div className="h-5 w-5 bg-gray-200 rounded animate-pulse"></div>
-                <div className="space-y-2">
-                  <div className="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Table skeleton */}
-        <div className="bg-white rounded-lg border">
-          <div className="p-4 border-b">
-            <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
-          </div>
-          <div className="p-4 space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center justify-between">
-                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
-                <div className="flex gap-2">
-                  <div className="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
-                </div>
-                <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Developer Dashboard</h1>
-          <p className="text-gray-600">Your CodeKudos Coin (CKC) Rewards</p>
-          {githubUsername && (
-            <p className="text-sm text-blue-600">Welcome, @{githubUsername}!</p>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Wallet className="w-5 h-5" />
-          <span className="font-mono">
-            {walletAddress
-              ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
-              : "Loading wallet..."}
-          </span>
-          {walletAddress && (
-            <Button variant="outline" size="sm" onClick={copyWallet}>
-              <Copy className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-yellow-500" />
-              <div>
-                <div className="text-2xl font-bold">
-                  {totalRewards.toLocaleString()}
-                </div>
-                <div className="text-sm text-gray-500">Total CKC Earned</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-orange-500" />
-              <div>
-                <div className="text-2xl font-bold">
-                  {pendingRewards.toLocaleString()}
-                </div>
-                <div className="text-sm text-gray-500">Pending CKC</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-green-500" />
-              <div>
-                <div className="text-2xl font-bold">
-                  {developerRewards.length}
-                </div>
-                <div className="text-sm text-gray-500">Total Rewards</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Rewards History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Rewards History</CardTitle>
-          <CardDescription>
-            Your complete reward history and current status
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Period</TableHead>
-                <TableHead>Activities</TableHead>
-                <TableHead>Tokens</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {developerRewards.map((reward) => (
-                <TableRow key={reward.id}>
-                  <TableCell className="font-medium">{reward.period}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {reward.activities.map((activity, index) => (
-                        <Badge
-                          key={index}
-                          variant="outline"
-                          className="text-xs"
-                        >
-                          {activity}
-                        </Badge>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-bold text-blue-600">
-                    {reward.tokens} CKC
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        reward.status === "completed" ? "default" : "secondary"
-                      }
-                    >
-                      {reward.status === "completed" ? "Completed" : "Pending"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-gray-500">
-                    {reward.status === "completed"
-                      ? reward.distributedAt
-                      : reward.createdAt}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
 export default function App() {
   const [activeTab, setActiveTab] = useState("manager");
   const [isGitHubConnected, setIsGitHubConnected] = useState(false);
@@ -821,13 +555,103 @@ export default function App() {
     });
   };
 
-  // Show loading state while checking GitHub status
+  // Show skeleton layout while checking GitHub status
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Checking GitHub connection...</p>
+      <div className="min-h-screen bg-gray-50">
+        <div className="border-b bg-white py-6">
+          <div className="container mx-auto">
+            {/* Header skeleton */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-8 w-64 bg-gray-200 rounded animate-pulse"></div>
+              <div className="flex items-center gap-4">
+                <div className="h-6 w-24 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-8 w-32 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            </div>
+
+            {/* Tabs skeleton */}
+            <div className="grid w-full grid-cols-2 max-w-2xl">
+              <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="container mx-auto p-6">
+          {/* Content skeleton based on active tab */}
+          {activeTab === "manager" && (
+            <div className="space-y-6">
+              {/* Manager dashboard skeleton */}
+              <div className="flex justify-between items-center">
+                <div className="space-y-2">
+                  <div className="h-8 w-64 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 w-48 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+                <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+
+              {/* Stats cards skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="bg-white p-4 rounded-lg border">
+                    <div className="flex items-center gap-2">
+                      <div className="h-5 w-5 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="space-y-2">
+                        <div className="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
+                        <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "developer" && (
+            <div className="space-y-6">
+              {/* Developer dashboard skeleton */}
+              <div className="flex justify-between items-center">
+                <div className="space-y-2">
+                  <div className="h-8 w-64 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 w-48 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-3 w-32 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-5 w-5 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+
+              {/* Stats cards skeleton */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-white p-4 rounded-lg border">
+                    <div className="flex items-center gap-2">
+                      <div className="h-5 w-5 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="space-y-2">
+                        <div className="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
+                        <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "unconnected" && (
+            <div className="space-y-6">
+              {/* Unconnected view skeleton */}
+              <div className="text-center space-y-4">
+                <div className="h-12 w-12 bg-gray-200 rounded-full animate-pulse mx-auto"></div>
+                <div className="h-8 w-64 bg-gray-200 rounded animate-pulse mx-auto"></div>
+                <div className="h-4 w-96 bg-gray-200 rounded animate-pulse mx-auto"></div>
+                <div className="h-10 w-32 bg-gray-200 rounded animate-pulse mx-auto"></div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -842,7 +666,17 @@ export default function App() {
               GitHub Reward Coin
             </h1>
             <div className="flex items-center gap-4">
-              {isGitHubConnected ? (
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant="default"
+                    className="bg-green-100 text-green-800"
+                  >
+                    <Hourglass className="w-3 h-3 mr-1" />
+                    Checking GitHub status...
+                  </Badge>
+                </div>
+              ) : isGitHubConnected ? (
                 <div className="flex items-center gap-2">
                   <Badge
                     variant="default"

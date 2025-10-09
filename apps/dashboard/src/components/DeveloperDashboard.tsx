@@ -1,244 +1,359 @@
 import { Developer, Reward, DeveloperStats } from "../types/reward";
 import { RewardCard } from "./RewardCard";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Progress } from "./ui/progress";
-import { Coins, TrendingUp, Clock, CheckCircle, Copy } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "./ui/table";
+import {
+  Coins,
+  TrendingUp,
+  Clock,
+  CheckCircle,
+  Copy,
+  Trophy,
+  Wallet,
+} from "lucide-react";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
-import React from "react";
+import React, { useState, useEffect } from "react";
+// @ts-expect-error - JSR import resolution issue
+import { createClient } from "@jsr/supabase__supabase-js";
+import * as supabaseInfo from "../utils/supabase/info";
+
+// Create a single supabase client for interacting with your database
+const supabase = createClient(
+  `https://${supabaseInfo.projectId}.supabase.co`,
+  supabaseInfo.publicAnonKey,
+);
 
 interface DeveloperDashboardProps {
-  developer: Developer;
-  rewards: Reward[];
+  githubId: string | null;
+  githubUsername: string | null;
 }
 
 export function DeveloperDashboard({
-  developer,
-  rewards,
+  githubId,
+  githubUsername,
 }: DeveloperDashboardProps) {
-  const developerRewards = rewards.filter(
-    (r) => r.developerId === developer.id,
-  );
+  const [walletAddress, setWalletAddress] = useState<string>("");
+  const [developerRewards, setDeveloperRewards] = useState<Reward[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const stats: DeveloperStats = {
-    totalRewardsReceived: developerRewards
-      .filter((r) => r.status === "distributed")
-      .reduce((sum, r) => sum + r.totalTokens, 0),
-    totalPendingRewards: developerRewards
-      .filter((r) => r.status !== "distributed")
-      .reduce((sum, r) => sum + r.totalTokens, 0),
-    completedRewards: developerRewards.filter((r) => r.status === "distributed")
-      .length,
-    thisMonthRewards: developerRewards
-      .filter((r) => {
-        const rewardDate = new Date(r.createdAt);
-        const now = new Date();
-        return (
-          rewardDate.getMonth() === now.getMonth() &&
-          rewardDate.getFullYear() === now.getFullYear() &&
-          r.status === "distributed"
-        );
-      })
-      .reduce((sum, r) => sum + r.totalTokens, 0),
-  };
+  // Load wallet address from localStorage on mount
+  useEffect(() => {
+    const storedWalletAddress = localStorage.getItem("wallet_address");
+    console.log(storedWalletAddress);
+    if (storedWalletAddress) {
+      setWalletAddress(storedWalletAddress);
+    }
+  }, []);
 
-  const copyWalletAddress = () => {
-    navigator.clipboard.writeText(developer.walletAddress);
+  // Fetch user-specific rewards and wallet address from Supabase
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!githubId) return;
+
+      setIsLoading(true);
+      try {
+        // Use the format `${githubUsername}${githubId}` as developerId
+        const developerId = `${githubUsername}${githubId}`;
+        console.log("Developer ID:", developerId);
+
+        if (!walletAddress) {
+          // Fetch user's wallet address from users table
+          const { data: userData, error: userError } = await supabase
+            .from("users")
+            .select("wallet_address")
+            .eq("id", developerId)
+            .single();
+
+          if (userError) {
+            console.error("Error fetching user data:", userError);
+          } else if (userData?.wallet_address) {
+            setWalletAddress(userData.wallet_address);
+            // Store wallet address locally
+            localStorage.setItem("wallet_address", userData.wallet_address);
+          }
+        }
+
+        // Fetch user's rewards with activities
+        const { data: rewardsData, error: rewardsError } = await supabase
+          .from("rewards")
+          .select(
+            `
+            *,
+            activities:reward_activities(*)
+          `,
+          )
+          .eq("developerId", developerId)
+          .order("createdAt", { ascending: false });
+
+        console.log("User rewards data:", rewardsData);
+
+        if (rewardsError) {
+          console.error("Error fetching user rewards:", rewardsError);
+        } else {
+          console.log("User rewards data:", rewardsData);
+          setDeveloperRewards(rewardsData || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (githubId) {
+      fetchUserData();
+    }
+  }, [githubId, githubUsername]);
+
+  const totalRewards = developerRewards
+    .filter((r) => r.status === "distributed")
+    .reduce((sum, r) => sum + r.totalTokens, 0);
+  const pendingRewards = developerRewards
+    .filter((r) => r.status === "pending")
+    .reduce((sum, r) => sum + r.totalTokens, 0);
+
+  const copyWallet = () => {
+    navigator.clipboard.writeText(walletAddress);
     toast.success("Wallet address copied to clipboard");
   };
 
-  const getRewardsByStatus = (status: Reward["status"]) => {
-    return developerRewards.filter((r) => r.status === status);
+  const formatActivities = (activities: any[]) => {
+    if (!activities || activities.length === 0) return "No activities";
+
+    return activities
+      .map((activity) => {
+        const count = activity.count || 0;
+        const type = activity.type || "activity";
+        const plural = count > 1 ? "s" : "";
+        return `${count} ${type}${plural}`;
+      })
+      .join(", ");
   };
 
-  const pendingRewards = developerRewards.filter(
-    (r) => r.status !== "distributed",
-  );
-  const completedRewards = developerRewards.filter(
-    (r) => r.status === "distributed",
-  );
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-6">
+        {/* Header skeleton */}
+        <div className="flex justify-between items-center">
+          <div className="space-y-2">
+            <div className="h-8 w-64 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-4 w-48 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-3 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-5 w-5 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* Statistics cards skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white p-4 rounded-lg border">
+              <div className="flex items-center gap-2">
+                <div className="h-5 w-5 bg-gray-200 rounded animate-pulse"></div>
+                <div className="space-y-2">
+                  <div className="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Table skeleton */}
+        <div className="bg-white rounded-lg border">
+          <div className="p-4 border-b">
+            <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="p-4 space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between">
+                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                <div className="flex gap-2">
+                  <div className="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+                <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
         <div>
-          <h1>Developer Dashboard</h1>
-          <p className="text-muted-foreground">
-            Track your CodeKudos Coin rewards
-          </p>
+          <h1 className="text-3xl font-bold">Developer Dashboard</h1>
+          <p className="text-gray-600">Your CodeKudos Coin (CKC) Rewards</p>
+          {githubUsername && (
+            <p className="text-sm text-blue-600">Welcome, @{githubUsername}!</p>
+          )}
         </div>
-        <Badge variant="outline" className="px-3 py-1">
-          Developer
-        </Badge>
-      </div>
-
-      {/* Developer Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white">
-              {developer.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
-            </div>
-            <div>
-              <h2>{developer.name}</h2>
-              <p className="text-sm text-muted-foreground">{developer.email}</p>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2">
-            <span className="text-sm">Wallet Address:</span>
-            <code className="text-xs bg-muted px-2 py-1 rounded flex-1">
-              {developer.walletAddress}
-            </code>
-            <Button variant="outline" size="sm" onClick={copyWalletAddress}>
-              <Copy className="w-3 h-3" />
+        <div className="flex items-center gap-2">
+          <Wallet className="w-5 h-5" />
+          <span className="font-mono">
+            {walletAddress
+              ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+              : "Loading wallet..."}
+          </span>
+          {walletAddress && (
+            <Button variant="outline" size="sm" onClick={copyWallet}>
+              <Copy className="w-4 h-4" />
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          )}
+        </div>
+      </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm">Total Rewards</CardTitle>
-            <Coins className="h-4 w-4 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl">{stats.totalRewardsReceived}</div>
-            <p className="text-xs text-muted-foreground">CKC Tokens Received</p>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-yellow-500" />
+              <div>
+                <div className="text-2xl font-bold">
+                  {totalRewards.toLocaleString()}
+                </div>
+                <div className="text-sm text-gray-500">Total CKC Earned</div>
+              </div>
+            </div>
           </CardContent>
         </Card>
-
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm">Pending Rewards</CardTitle>
-            <Clock className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl">{stats.totalPendingRewards}</div>
-            <p className="text-xs text-muted-foreground">CKC Tokens Pending</p>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-orange-500" />
+              <div>
+                <div className="text-2xl font-bold">
+                  {pendingRewards.toLocaleString()}
+                </div>
+                <div className="text-sm text-gray-500">Pending CKC</div>
+              </div>
+            </div>
           </CardContent>
         </Card>
-
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm">Completed Rewards</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl">{stats.completedRewards}</div>
-            <p className="text-xs text-muted-foreground">Total Rewards</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm">This Month</CardTitle>
-            <TrendingUp className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl">{stats.thisMonthRewards}</div>
-            <p className="text-xs text-muted-foreground">CKC This Month</p>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-green-500" />
+              <div>
+                <div className="text-2xl font-bold">
+                  {developerRewards.length}
+                </div>
+                <div className="text-sm text-gray-500">Total Rewards</div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Progress Indicator */}
+      {/* Rewards History */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Reward Progress</CardTitle>
+          <CardTitle>Rewards History</CardTitle>
+          <CardDescription>
+            Your complete reward history and current status
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span>Rewards Earned vs Pending</span>
-              <span>
-                {stats.totalRewardsReceived} /{" "}
-                {stats.totalRewardsReceived + stats.totalPendingRewards} CKC
-              </span>
+          {developerRewards.length === 0 ? (
+            <div className="text-center py-8">
+              <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+              <h3>No rewards yet</h3>
+              <p className="text-muted-foreground">
+                Your rewards will appear here once you start contributing
+              </p>
             </div>
-            <Progress
-              value={
-                (stats.totalRewardsReceived /
-                  (stats.totalRewardsReceived + stats.totalPendingRewards)) *
-                100
-              }
-              className="w-full"
-            />
-          </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Period</TableHead>
+                  <TableHead>Activities</TableHead>
+                  <TableHead>Tokens</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {developerRewards.map((reward) => (
+                  <TableRow key={reward.id}>
+                    <TableCell className="font-medium">
+                      {new Date(reward.createdAt).toLocaleDateString("en-US", {
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {reward.activities?.map((activity, index) => (
+                          <Badge
+                            key={index}
+                            variant="outline"
+                            className="text-xs"
+                          >
+                            {activity.count} {activity.type}
+                            {activity.count > 1 ? "s" : ""}
+                          </Badge>
+                        )) || (
+                          <span className="text-muted-foreground text-sm">
+                            No activities
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-bold text-blue-600">
+                      {reward.totalTokens} CKC
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          reward.status === "distributed"
+                            ? "default"
+                            : "secondary"
+                        }
+                      >
+                        {reward.status === "distributed"
+                          ? "Completed"
+                          : "Pending"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-gray-500">
+                      {reward.status === "distributed"
+                        ? new Date(reward.updatedAt).toLocaleDateString()
+                        : new Date(reward.createdAt).toLocaleDateString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
-
-      {/* Rewards List */}
-      <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="pending">
-            Pending Rewards ({pendingRewards.length})
-          </TabsTrigger>
-          <TabsTrigger value="completed">
-            Completed Rewards ({completedRewards.length})
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="pending" className="space-y-4">
-          {pendingRewards.length === 0 ? (
-            <Card>
-              <CardContent className="flex items-center justify-center py-8">
-                <div className="text-center">
-                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                  <h3>No pending rewards</h3>
-                  <p className="text-muted-foreground">
-                    Your pending rewards will appear here
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {pendingRewards.map((reward) => (
-                <RewardCard
-                  key={reward.id}
-                  reward={reward}
-                  showActions={false}
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="completed" className="space-y-4">
-          {completedRewards.length === 0 ? (
-            <Card>
-              <CardContent className="flex items-center justify-center py-8">
-                <div className="text-center">
-                  <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                  <h3>No completed rewards</h3>
-                  <p className="text-muted-foreground">
-                    Your completed rewards will appear here
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {completedRewards.map((reward) => (
-                <RewardCard
-                  key={reward.id}
-                  reward={reward}
-                  showActions={false}
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
     </div>
   );
 }
