@@ -46,7 +46,7 @@ import { Reward } from "./types/reward";
 // @ts-expect-error - NPM imports in Deno not fully supported by TypeScript
 import { createClient } from "@jsr/supabase__supabase-js";
 import * as supabaseInfo from "./utils/supabase/info";
-import {faker} from '@faker-js/faker'
+import { faker } from "@faker-js/faker";
 
 // Create a single supabase client for interacting with your database
 const supabase = createClient(
@@ -98,15 +98,15 @@ const getActivityIcon = (type: string) => {
 
 const getStatusBadge = (reward: any) => {
   switch (reward.status) {
-    case 'pending':
+    case "pending":
       return <Badge variant="outline">Pending</Badge>;
-    case 'manager_approved':
+    case "manager_approved":
       if (reward.managerApproval?.approved) {
         return <Badge variant="secondary">HR Review</Badge>;
       } else {
         return <Badge variant="outline">Manager Review</Badge>;
       }
-    case 'fully_approved':
+    case "fully_approved":
       return (
         <Badge variant="default" className="bg-green-500">
           Fully Approved
@@ -117,11 +117,11 @@ const getStatusBadge = (reward: any) => {
   }
 };
 
-const RewardCard = ({reward, onApprove, userRole}: any) => {
+const RewardCard = ({ reward, onApprove, userRole }: any) => {
   const [approving, setApproving] = useState(false);
   const canApprove =
-    (userRole === 'manager' && !reward.managerApproval?.approved) ||
-    (userRole === 'hr' &&
+    (userRole === "manager" && !reward.managerApproval?.approved) ||
+    (userRole === "hr" &&
       reward.managerApproval?.approved &&
       !reward.hrApproval?.approved);
 
@@ -131,9 +131,9 @@ const RewardCard = ({reward, onApprove, userRole}: any) => {
     }
 
     setApproving(true);
-    await onApprove(reward.id, userRole)
+    await onApprove(reward.id, userRole);
     setApproving(false);
-  }
+  };
 
   return (
     <Card className="mb-4">
@@ -220,8 +220,10 @@ const RewardCard = ({reward, onApprove, userRole}: any) => {
                 onClick={() => handleApproval(reward.id, userRole)}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                {approving ? 'Approving...' : `
-                  Approve (${userRole === 'manager' ? 'Manager' : 'HR'})
+                {approving
+                  ? "Approving..."
+                  : `
+                  Approve (${userRole === "manager" ? "Manager" : "HR"})
                 `}
               </Button>
             )}
@@ -256,30 +258,81 @@ const ManagerDashboard = () => {
       });
   }, []);
 
+  const sendTokenReward = async (
+    rewardId: number,
+    to: string,
+    amount: string,
+  ) => {
+    try {
+      // Check if user is already connected by calling the connect endpoint
+      const serverUrl =
+        (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:54321";
+      const url =
+        serverUrl === "http://localhost:8000"
+          ? new URL(`${serverUrl}/connect/reward`)
+          : new URL(`${serverUrl}/functions/v1/connect/reward`);
+      const response = await fetch(url.toString(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ rewardId, to, amount: String(amount) }),
+      });
+
+      if (response.ok) {
+        // Handle successful response
+        const { status } = await response.json();
+        if (status === "success") {
+          toast.success("Token reward sent successfully");
+        }
+      }
+    } catch (error) {
+      console.error("Error sending token reward:", error);
+    }
+  };
+
   const handleApprove = async (rewardId: number, role: string) => {
-    const {data: [updatedReward]} = await supabase.from('rewards').update({
-      [role === 'manager'
-              ? 'managerApproval'
-              : 'hrApproval']: {
-        approved: true,
-        approvedAt: new Date().toISOString(),
-        approvedBy: faker.person.fullName()
-      },
-    }).eq('id', rewardId).select();
+    const {
+      data: [updatedReward],
+    } = await supabase
+      .from("rewards")
+      .update({
+        [role === "manager" ? "managerApproval" : "hrApproval"]: {
+          approved: true,
+          approvedAt: new Date().toISOString(),
+          approvedBy: faker.person.fullName(),
+        },
+      })
+      .eq("id", rewardId)
+      .select();
 
     setRewards((prevRewards) =>
-        prevRewards.map((reward) =>
-          reward.id === rewardId
-            ? {
+      prevRewards.map((reward) =>
+        reward.id === rewardId
+          ? {
               ...reward,
               ...updatedReward,
             }
-            : reward,
-        )
+          : reward,
+      ),
     );
     toast.success(
       `Reward approved by ${role === "manager" ? "Manager" : "HR Manager"}`,
     );
+
+    // if both approvals are done, update status to fully_approved
+    const reward = { ...updatedReward };
+    if (reward.managerApproval?.approved && reward.hrApproval?.approved) {
+      // fully approve the reward
+      await supabase
+        .from("rewards")
+        .update({ status: "fully_approved" })
+        .eq("id", reward.id);
+
+      // send token to developer's wallet
+      await sendTokenReward(reward.id, reward.developerId, reward.totalTokens);
+      toast.success("Tokens distributed to developer's wallet");
+    }
   };
 
   const filteredRewards = rewards.filter((reward) => {
@@ -718,7 +771,11 @@ export default function App() {
         // Check if user is already connected by calling the connect endpoint
         const serverUrl =
           (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:54321";
-        const response = await fetch(`${serverUrl}/functions/v1/connect`, {
+        const url =
+          serverUrl === "http://localhost:8000"
+            ? new URL(`${serverUrl}/connect`)
+            : new URL(`${serverUrl}/functions/v1/connect`);
+        const response = await fetch(url.toString(), {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -804,7 +861,12 @@ export default function App() {
     // Redirect to server-side GitHub OAuth endpoint
     const serverUrl =
       (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:54321";
-    window.location.href = `${serverUrl}/functions/v1/connect/github`;
+    console.log("Redirecting to GitHub OAuth at:", serverUrl);
+    const url =
+      serverUrl === "http://localhost:8000"
+        ? new URL(`${serverUrl}/connect`)
+        : new URL(`${serverUrl}/functions/v1/connect`);
+    window.location.href = `${url}/github`;
   };
 
   const handleDisconnectGithub = () => {

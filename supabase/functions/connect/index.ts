@@ -11,6 +11,46 @@ import { createClient } from "jsr:@supabase/supabase-js@2.49.8";
 import * as kv from "./kv_store.ts";
 // @ts-expect-error - NPM imports in Deno not fully supported by TypeScript
 import { ethers } from "npm:ethers";
+// Use zod for request validation (same schema as the token package)
+// Using small inline validation instead of zod for Deno compatibility
+// Local Deno-friendly token client wrapper
+// @ts-expect-error - Deno requires .ts extension for local imports
+import { giveReward as sendTokenReward } from "./token_client.ts";
+
+// Inline validator to mimic TransactionRequestSchema behavior
+function validateTransactionRequest(obj: any) {
+  if (!obj || typeof obj !== "object")
+    return { ok: false, error: "Body must be an object" };
+  const to = obj.to;
+  const rewardId = obj.rewardId;
+  if (typeof rewardId !== "number" || rewardId <= 0)
+    return { ok: false, error: "Reward ID must be a positive integer" };
+  if (typeof to !== "string" || to.length === 0)
+    return { ok: false, error: "Recipient address is required" };
+  const amount = obj.amount;
+  if (typeof amount !== "string" || amount.length === 0)
+    return { ok: false, error: "Amount is required" };
+  if (!/^-?\d+$/.test(amount))
+    return { ok: false, error: "Amount must be an integer string" };
+  // amount can be string, number, or bigint. We accept strings that parse to a positive integer.
+  let amountBigInt: bigint;
+  try {
+    if (typeof amount === "bigint") amountBigInt = amount;
+    else if (typeof amount === "number")
+      amountBigInt = BigInt(Math.floor(amount));
+    else if (typeof amount === "string") {
+      // handle numeric string
+      if (!/^-?\d+$/.test(amount))
+        return { ok: false, error: "Amount must be an integer string" };
+      amountBigInt = BigInt(amount);
+    } else return { ok: false, error: "Amount must be a bigint/number/string" };
+  } catch (e) {
+    return { ok: false, error: "Invalid amount format" };
+  }
+  if (amountBigInt <= 0n)
+    return { ok: false, error: "Amount must be positive" };
+  return { ok: true, data: { to, amount: amountBigInt } };
+}
 
 // Types for GitHub API responses
 interface GitHubUser {
@@ -433,6 +473,74 @@ app.post("/connect/github/webhook/push", async (c: Context) => {
   } catch (error) {
     console.error("GitHub webhook error:", error);
     return c.json({ error: "Failed to process webhook" }, 500);
+  }
+});
+
+// accept a transaction request and dispatch token reward
+app.post("/connect/reward", async (c: Context) => {
+  try {
+    const body = await c.req.json();
+
+    const parsed = validateTransactionRequest(body);
+    if (!parsed.ok) {
+      console.error("Invalid /connect/reward request:", parsed.error);
+      return c.json({ error: "Invalid request", details: parsed.error }, 400);
+    }
+
+    // Narrow txRequest now that parsed.ok is true
+    const txRequest = parsed.data as {
+      rewardId: number;
+      to: string;
+      amount: bigint;
+    };
+
+    // Get user by to (developerId)
+    const { data: user } = await supabase
+      .from("users")
+      .select("wallet_address")
+      .eq("id", txRequest.to)
+      .single();
+    if (!user) {
+      console.error("User not found for address:", txRequest.to);
+      return c.json({ error: "User not found" }, 404);
+    }
+
+    console.log(user);
+    console.log(
+      `/connect/reward: Dispatching reward to ${user.id} (${user.wallet_address}) for amount ${txRequest.amount}`,
+    );
+
+    if (!user.wallet_address) {
+      console.error("User has no wallet address:", user.id);
+      return c.json({ error: "User has no wallet address" }, 400);
+    }
+
+    // sendTokenReward expects (to, amountTokens) where amountTokens is string|number
+    const result = await sendTokenReward(
+      user.wallet_address,
+      txRequest.amount.toString(),
+    );
+
+    if (!result) {
+      console.error("Token reward dispatch failed");
+      return c.json({ error: "Failed to dispatch token reward" }, 500);
+    }
+
+    await supabase
+      .from("rewards")
+      .update({ status: "distributed" })
+      .eq("id", txRequest.rewardId);
+
+    return c.json({
+      to: user.wallet_address,
+      amount: txRequest.amount.toString(),
+      timestamp: new Date().toISOString(),
+      status: result ? "success" : "error",
+      details: result,
+    });
+  } catch (err) {
+    console.error("/connect/reward error:", err);
+    return c.json({ error: "Internal server error" }, 500);
   }
 });
 
