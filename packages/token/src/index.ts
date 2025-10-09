@@ -22,7 +22,7 @@ app.post("/api/reward", async (req, res) => {
     ...transactionRequest,
     timestamp: new Date().toISOString(),
     status: rewardStatus ? "success" : "error",
-    note: "placeholder only",
+    details: rewardStatus,
   });
 });
 

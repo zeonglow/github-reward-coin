@@ -43,6 +43,8 @@ interface RewardActivity {
   points: number;
   type: string;
   rewardId: number;
+  repository: string;
+  ticketId?: string;
 }
 
 interface Reward {
@@ -263,8 +265,12 @@ app.get("/connect/github/callback", async (c: Context) => {
       }
     }
 
-    // Redirect to frontend with success
-    return c.redirect(`${Deno.env.get("FRONTEND_URL")}?github_connected=true`);
+    // Redirect to frontend with success and user info
+    const frontendUrl = new URL(Deno.env.get("FRONTEND_URL")!);
+    frontendUrl.searchParams.set("github_connected", "true");
+    frontendUrl.searchParams.set("github_id", githubUser.id.toString());
+    frontendUrl.searchParams.set("github_username", githubUser.login);
+    return c.redirect(frontendUrl.toString());
   } catch (error) {
     console.error("GitHub OAuth callback error:", error);
     return c.redirect(
@@ -361,6 +367,7 @@ app.post("/connect/github/webhook/push", async (c: Context) => {
 
         rewardActivities[username].push({
           description: commit.message,
+          repository: repository.full_name,
           points: changes,
           type: "commit",
           rewardId: 0,
@@ -370,9 +377,19 @@ app.post("/connect/github/webhook/push", async (c: Context) => {
 
     // Save to reward
     for (const [username, stats] of Object.entries(authorStats)) {
+      const user = await supabase
+        .from("users")
+        .select("id")
+        .eq("github_username", username)
+        .single();
+      if (!user.data?.id) {
+        console.error(`No user found for GitHub username: ${username}`);
+        continue;
+      }
+
       const reward: Reward = {
         status: "pending",
-        developerId: username,
+        developerId: user.data?.id || "unknown",
         totalTokens: stats.points,
         createdAt: new Date(),
         updatedAt: new Date(),
