@@ -60,7 +60,7 @@ yarn server:stop
 
 3. **Test the server**:
    ```bash
-   curl http://localhost:8000/make-server-b1e42adc/health
+   curl http://localhost:54321/functions/v1/connect
    ```
 
 ## 🔧 **Environment Variables**

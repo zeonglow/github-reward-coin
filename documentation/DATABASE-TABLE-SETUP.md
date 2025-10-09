@@ -44,7 +44,7 @@ yarn server:stop
 yarn server
 
 # Test OAuth endpoint
-curl -I http://localhost:8000/connect/github
+curl -I http://localhost:54321/functions/v1/connect/github
 ```
 
 ## 🎯 **What This Table Does**
@@ -108,7 +108,7 @@ SELECT * FROM kv_store_b1e42adc LIMIT 1;
 yarn server
 
 # Test OAuth endpoint (should redirect to GitHub)
-curl -I http://localhost:8000/connect/github
+curl -I http://localhost:54321/functions/v1/connect/github
 
 # Check if state is stored
 # (You can check in Supabase dashboard → Table Editor)

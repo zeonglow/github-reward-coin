@@ -576,9 +576,10 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('manager');
 
   const handleConnectGithub = () => {
-    // Simulate GitHub connection
-    setActiveTab('developer');
-    toast.success('GitHub account connected successfully!');
+    // Redirect to server-side GitHub OAuth endpoint
+    const serverUrl =
+      (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:54321";
+    window.location.href = `${serverUrl}/functions/v1/connect/github`;
   };
 
   return (

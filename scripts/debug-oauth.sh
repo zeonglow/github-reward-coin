@@ -11,12 +11,12 @@ echo "=============================="
 
 # Check if server is running
 echo "1. Checking if server is running..."
-if curl -s http://localhost:8000/make-server-b1e42adc/health > /dev/null; then
-    echo "✅ Server is running on port 8000"
+if curl -s http://localhost:54321/functions/v1/connect > /dev/null; then
+    echo "✅ Server is running on port 54321"
 else
-    echo "❌ Server not running on port 8000, checking other ports..."
+    echo "❌ Server not running on port 54321, checking other ports..."
     for port in 8001 8002 8003; do
-        if curl -s http://localhost:$port/make-server-b1e42adc/health > /dev/null; then
+        if curl -s http://localhost:$port/functions/v1/connect > /dev/null; then
             echo "✅ Server is running on port $port"
             break
         fi
@@ -33,12 +33,12 @@ echo "FRONTEND_URL: ${FRONTEND_URL:-❌ NOT SET}"
 
 echo ""
 echo "3. Testing GitHub OAuth endpoint..."
-echo "Testing: http://localhost:8000/connect/github"
-curl -I http://localhost:8000/connect/github 2>/dev/null | head -1 || echo "❌ OAuth endpoint not responding"
+echo "Testing: http://localhost:54321/functions/v1/connect/github"
+curl -I http://localhost:54321/functions/v1/connect/github 2>/dev/null | head -1 || echo "❌ OAuth endpoint not responding"
 
 echo ""
 echo "4. Common issues to check:"
-echo "   - GitHub OAuth app redirect URI should be: http://localhost:8000/connect/github/callback"
+echo "   - GitHub OAuth app redirect URI should be: http://localhost:54321/functions/v1/connect/github/callback"
 echo "   - Environment variables must be set correctly"
 echo "   - Server must be running"
 echo "   - GitHub OAuth app must be configured properly"

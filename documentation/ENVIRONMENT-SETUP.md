@@ -46,7 +46,7 @@ FRONTEND_URL=http://localhost:3000
 2. Fill in:
    - **Application name**: `GitHub Reward Coin`
    - **Homepage URL**: `http://localhost:3000`
-   - **Authorization callback URL**: `http://localhost:8000/connect/github/callback`
+   - **Authorization callback URL**: `http://localhost:54321/functions/v1/connect/github/callback`
 3. Copy:
    - **Client ID** → `GITHUB_CLIENT_ID`
    - **Client Secret** → `GITHUB_CLIENT_SECRET`
@@ -65,7 +65,7 @@ yarn server
 
 ```bash
 # Test OAuth endpoint
-curl -I http://localhost:8000/connect/github
+curl -I http://localhost:54321/functions/v1/connect/github
 
 # Should redirect to GitHub (not show DNS error)
 ```
@@ -80,7 +80,7 @@ curl -I http://localhost:8000/connect/github
 ### **"Invalid redirect_uri"**
 
 - **Cause**: GitHub OAuth app redirect URI doesn't match
-- **Fix**: Set redirect URI to `http://localhost:8000/connect/github/callback`
+- **Fix**: Set redirect URI to `http://localhost:54321/functions/v1/connect/github/callback`
 
 ### **"Client authentication failed"**
 

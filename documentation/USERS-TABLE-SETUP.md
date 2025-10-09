@@ -63,7 +63,7 @@ yarn server:stop
 yarn server
 
 # Test OAuth flow
-curl -I http://localhost:8000/connect/github
+curl -I http://localhost:54321/functions/v1/connect/github
 ```
 
 ## 🎯 **What This Table Stores**
@@ -163,7 +163,7 @@ SELECT * FROM users LIMIT 1;
 yarn server
 
 # Test OAuth endpoint
-curl -I http://localhost:8000/connect/github
+curl -I http://localhost:54321/functions/v1/connect/github
 
 # Complete OAuth flow
 # Check if user data is saved in Supabase dashboard

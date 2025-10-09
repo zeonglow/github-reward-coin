@@ -1,13 +1,17 @@
 {
   "imports": {
-    "npm:hono": "npm:hono@^4.0.0",
-    "npm:hono/cors": "npm:hono@^4.0.0/cors",
-    "npm:hono/logger": "npm:hono@^4.0.0/logger",
+    "jsr:@hono/hono": "jsr:@hono/hono@^4.0.0",
+    "jsr:@hono/cors": "jsr:@hono/cors@^4.0.0",
+    "jsr:@hono/logger": "jsr:@hono/logger@^4.0.0",
     "jsr:@supabase/supabase-js": "jsr:@supabase/supabase-js@2.49.8"
   },
   "nodeModulesDir": "auto",
+  "compilerOptions": {
+    "lib": ["deno.window"],
+    "strict": true
+  },
   "tasks": {
-    "start": "deno run --allow-net --allow-env --allow-read --allow-write src/supabase/functions/server/index.tsx",
-    "dev": "deno run --allow-net --allow-env --allow-read --allow-write --watch src/supabase/functions/server/index.tsx"
+    "start": "deno run --allow-net --allow-env --allow-read --allow-write ../../supabase/functions/connect/index.ts",
+    "dev": "deno run --allow-net --allow-env --allow-read --allow-write --watch ../../supabase/functions/connect/index.ts"
   }
 }

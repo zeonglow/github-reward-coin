@@ -16,7 +16,7 @@ GITHUB_CLIENT_ID=your_github_oauth_client_id
 GITHUB_CLIENT_SECRET=your_github_oauth_client_secret
 
 # Frontend Configuration
-VITE_SERVER_URL=http://localhost:8000
+VITE_SERVER_URL=http://localhost:54321
 FRONTEND_URL=http://localhost:3000
 ```
 
@@ -31,8 +31,8 @@ deno run --allow-net --allow-env --allow-read --allow-write src/supabase/functio
 
 ### Step 3: Test the endpoints
 
-- Health check: http://localhost:8000/make-server-b1e42adc/health
-- GitHub OAuth: http://localhost:8000/connect/github
+- Health check: http://localhost:54321/functions/v1/connect
+- GitHub OAuth: http://localhost:54321/functions/v1/connect/github
 
 ## 🚀 Method 2: Using Supabase CLI
 
@@ -71,7 +71,7 @@ cd apps/dashboard
 ## 🧪 Testing the GitHub OAuth Flow
 
 1. **Start your frontend**: `npm run dev` (runs on http://localhost:3000)
-2. **Start your server**: Use any of the methods above (runs on http://localhost:8000)
+2. **Start your server**: Use any of the methods above (runs on http://localhost:54321)
 3. **Test the flow**:
    - Go to http://localhost:3000
    - Click "Connect GitHub"
@@ -93,7 +93,7 @@ cd apps/dashboard
 
 ### URLs
 
-- `VITE_SERVER_URL`: Where your server runs (usually http://localhost:8000)
+- `VITE_SERVER_URL`: Where your server runs (usually http://localhost:54321)
 - `FRONTEND_URL`: Where your React app runs (usually http://localhost:3000)
 
 ## 🐛 Troubleshooting
@@ -109,10 +109,10 @@ cd apps/dashboard
 
 ```bash
 # Check if server is running
-curl http://localhost:8000/make-server-b1e42adc/health
+curl http://localhost:54321/functions/v1/connect
 
 # Test GitHub OAuth flow
-curl -L http://localhost:8000/connect/github
+curl -L http://localhost:54321/functions/v1/connect/github
 
 # Check environment variables
 echo $SUPABASE_URL

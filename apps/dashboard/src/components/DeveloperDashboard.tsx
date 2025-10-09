@@ -1,61 +1,77 @@
-import { Developer, Reward, DeveloperStats } from '../types/reward';
-import { RewardCard } from './RewardCard';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Progress } from './ui/progress';
-import { Coins, TrendingUp, Clock, CheckCircle, Copy } from 'lucide-react';
-import { Button } from './ui/button';
-import { toast } from 'sonner@2.0.3';
-import React from 'react';
+import { Developer, Reward, DeveloperStats } from "../types/reward";
+import { RewardCard } from "./RewardCard";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Progress } from "./ui/progress";
+import { Coins, TrendingUp, Clock, CheckCircle, Copy } from "lucide-react";
+import { Button } from "./ui/button";
+import { toast } from "sonner";
+import React from "react";
 
 interface DeveloperDashboardProps {
   developer: Developer;
   rewards: Reward[];
 }
 
-export function DeveloperDashboard({ developer, rewards }: DeveloperDashboardProps) {
-  const developerRewards = rewards.filter(r => r.developerId === developer.id);
+export function DeveloperDashboard({
+  developer,
+  rewards,
+}: DeveloperDashboardProps) {
+  const developerRewards = rewards.filter(
+    (r) => r.developerId === developer.id,
+  );
 
   const stats: DeveloperStats = {
     totalRewardsReceived: developerRewards
-      .filter(r => r.status === 'distributed')
+      .filter((r) => r.status === "distributed")
       .reduce((sum, r) => sum + r.totalTokens, 0),
     totalPendingRewards: developerRewards
-      .filter(r => r.status !== 'distributed')
+      .filter((r) => r.status !== "distributed")
       .reduce((sum, r) => sum + r.totalTokens, 0),
-    completedRewards: developerRewards.filter(r => r.status === 'distributed').length,
+    completedRewards: developerRewards.filter((r) => r.status === "distributed")
+      .length,
     thisMonthRewards: developerRewards
-      .filter(r => {
+      .filter((r) => {
         const rewardDate = new Date(r.createdAt);
         const now = new Date();
-        return rewardDate.getMonth() === now.getMonth() &&
-               rewardDate.getFullYear() === now.getFullYear() &&
-               r.status === 'distributed';
+        return (
+          rewardDate.getMonth() === now.getMonth() &&
+          rewardDate.getFullYear() === now.getFullYear() &&
+          r.status === "distributed"
+        );
       })
-      .reduce((sum, r) => sum + r.totalTokens, 0)
+      .reduce((sum, r) => sum + r.totalTokens, 0),
   };
 
   const copyWalletAddress = () => {
     navigator.clipboard.writeText(developer.walletAddress);
-    toast.success('Wallet address copied to clipboard');
+    toast.success("Wallet address copied to clipboard");
   };
 
-  const getRewardsByStatus = (status: Reward['status']) => {
-    return developerRewards.filter(r => r.status === status);
+  const getRewardsByStatus = (status: Reward["status"]) => {
+    return developerRewards.filter((r) => r.status === status);
   };
 
-  const pendingRewards = developerRewards.filter(r => r.status !== 'distributed');
-  const completedRewards = developerRewards.filter(r => r.status === 'distributed');
+  const pendingRewards = developerRewards.filter(
+    (r) => r.status !== "distributed",
+  );
+  const completedRewards = developerRewards.filter(
+    (r) => r.status === "distributed",
+  );
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1>Developer Dashboard</h1>
-          <p className="text-muted-foreground">Track your CodeKudos Coin rewards</p>
+          <p className="text-muted-foreground">
+            Track your CodeKudos Coin rewards
+          </p>
         </div>
-        <Badge variant="outline" className="px-3 py-1">Developer</Badge>
+        <Badge variant="outline" className="px-3 py-1">
+          Developer
+        </Badge>
       </div>
 
       {/* Developer Info */}
@@ -63,7 +79,10 @@ export function DeveloperDashboard({ developer, rewards }: DeveloperDashboardPro
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
             <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white">
-              {developer.name.split(' ').map(n => n[0]).join('')}
+              {developer.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")}
             </div>
             <div>
               <h2>{developer.name}</h2>
@@ -77,11 +96,7 @@ export function DeveloperDashboard({ developer, rewards }: DeveloperDashboardPro
             <code className="text-xs bg-muted px-2 py-1 rounded flex-1">
               {developer.walletAddress}
             </code>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={copyWalletAddress}
-            >
+            <Button variant="outline" size="sm" onClick={copyWalletAddress}>
               <Copy className="w-3 h-3" />
             </Button>
           </div>
@@ -144,10 +159,17 @@ export function DeveloperDashboard({ developer, rewards }: DeveloperDashboardPro
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span>Rewards Earned vs Pending</span>
-              <span>{stats.totalRewardsReceived} / {stats.totalRewardsReceived + stats.totalPendingRewards} CKC</span>
+              <span>
+                {stats.totalRewardsReceived} /{" "}
+                {stats.totalRewardsReceived + stats.totalPendingRewards} CKC
+              </span>
             </div>
             <Progress
-              value={stats.totalRewardsReceived / (stats.totalRewardsReceived + stats.totalPendingRewards) * 100}
+              value={
+                (stats.totalRewardsReceived /
+                  (stats.totalRewardsReceived + stats.totalPendingRewards)) *
+                100
+              }
               className="w-full"
             />
           </div>
@@ -172,7 +194,9 @@ export function DeveloperDashboard({ developer, rewards }: DeveloperDashboardPro
                 <div className="text-center">
                   <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
                   <h3>No pending rewards</h3>
-                  <p className="text-muted-foreground">Your pending rewards will appear here</p>
+                  <p className="text-muted-foreground">
+                    Your pending rewards will appear here
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -196,7 +220,9 @@ export function DeveloperDashboard({ developer, rewards }: DeveloperDashboardPro
                 <div className="text-center">
                   <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
                   <h3>No completed rewards</h3>
-                  <p className="text-muted-foreground">Your completed rewards will appear here</p>
+                  <p className="text-muted-foreground">
+                    Your completed rewards will appear here
+                  </p>
                 </div>
               </CardContent>
             </Card>

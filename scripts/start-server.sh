@@ -24,7 +24,7 @@ find_available_port() {
 }
 
 # Default port
-DEFAULT_PORT=8000
+DEFAULT_PORT=54321
 PORT=${1:-$DEFAULT_PORT}
 
 echo "🚀 Starting Supabase Function Server"
@@ -44,8 +44,10 @@ export SUPABASE_URL="${SUPABASE_URL:-https://uvkwcralkuwqocgsmcap.supabase.co}"
 export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2a3djcmFsa3V3cW9jZ3NtY2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4OTI5NzQsImV4cCI6MjA3NTQ2ODk3NH0.td1b8gkB5V2vRiVITKlGDEg2l6iBbu4QrFNZTjfcMzo}"
 export GITHUB_CLIENT_ID="${GITHUB_CLIENT_ID:-Ov23liBnvStPdHDqXkec}"
 export GITHUB_CLIENT_SECRET="${GITHUB_CLIENT_SECRET:-5ada8cc4890cab652dd36e42c46ee11a84b0f560}"
+export GITHUB_CLIENT_ID1="${GITHUB_CLIENT_ID:-Ov23lixY0hujOdXVfmuA}"
+export GITHUB_CLIENT_SECRET1="${GITHUB_CLIENT_SECRET:-1221a3f72c538582b80225b89f00589f137779db}"
 export FRONTEND_URL="${FRONTEND_URL:-http://localhost:3000}"
-export VITE_SERVER_URL="${VITE_SERVER_URL:-http://localhost:8000}"
+export VITE_SERVER_URL="${VITE_SERVER_URL:-http://localhost:54321}"
 
 # Check if using placeholder values
 if [[ "$SUPABASE_URL" == "https://example.supabase.co" ]]; then
@@ -58,10 +60,10 @@ else
 fi
 
 echo "🌐 Server will start on port $PORT"
-echo "🔗 Health check: http://localhost:$PORT/make-server-b1e42adc/health"
+echo "🔗 Health check: http://localhost:$PORT/health"
 echo "🔗 GitHub OAuth: http://localhost:$PORT/connect/github"
 echo ""
 
 # Start the server
 echo "Starting server..."
-deno run --allow-net --allow-env --allow-read --allow-write apps/dashboard/src/supabase/functions/server/index.tsx
+deno run --allow-net --allow-env --allow-read --allow-write supabase/functions/connect/index.ts
