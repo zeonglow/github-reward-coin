@@ -8,15 +8,7 @@ import {
 } from './components/ui/card';
 import {Badge} from './components/ui/badge';
 import {Button} from './components/ui/button';
-import {Tabs, TabsContent, TabsList, TabsTrigger} from './components/ui/tabs';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from './components/ui/table';
+import {Tabs, TabsList, TabsTrigger} from './components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -34,9 +26,6 @@ import {
   GitPullRequest,
   Ticket,
   Trophy,
-  Wallet,
-  Copy,
-  TrendingUp,
   Users,
   DollarSign,
   Target,
@@ -47,7 +36,6 @@ import {
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -55,7 +43,6 @@ import {
 } from './components/ui/pagination';
 import {UnconnectedView} from './components/UnconnectedView';
 import {DeveloperDashboard} from './components/DeveloperDashboard';
-import {Reward} from './types/reward';
 // @ts-expect-error - NPM imports in Deno not fully supported by TypeScript
 import {createClient} from '@jsr/supabase__supabase-js';
 import * as supabaseInfo from './utils/supabase/info';
