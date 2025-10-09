@@ -131,7 +131,7 @@ export function DeveloperDashboard({
     (r) => r.status === "distributed",
   );
   const approvedRewards = developerRewards.filter(
-    (r) => r.status === "fully_approved",
+    (r) => r.status === "fully_approved" || r.status === "distributed",
   );
   const totalKCKRewards = earnedRewards.reduce(
     (sum, r) => sum + r.totalTokens,
