@@ -10,6 +10,7 @@ app.post("/api/reward", (req, res) => {
   const result = TransactionRequestSchema.safeParse(req.body);
   if (!result.success) {
     res.status(400).send({ error: result.error });
+    return;
   }
   const transactionRequest: TransactionRequest =
     result.data as TransactionRequest;
