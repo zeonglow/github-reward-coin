@@ -1,27 +1,21 @@
 import express from "express";
 import type { TransactionRequest } from "./types.js";
 import { TransactionRequestSchema } from "./types.js";
-import { giveReward } from "./rewards.js";
-export { giveReward } from "./rewards.js";
-
 const app = express();
 const PORT = process.env.PORT || 8888;
 
 app.use(express.json());
 
-app.post("/api/reward", async (req, res) => {
+app.post("/api/reward", (req, res) => {
   const result = TransactionRequestSchema.safeParse(req.body);
   if (!result.success) {
     res.status(400).send({ error: result.error });
-    return;
   }
-  const transactionRequest: TransactionRequest = result.data;
-
-  const rewardStatus = await giveReward(transactionRequest);
+  const transactionRequest: TransactionRequest =
+    result.data as TransactionRequest;
   res.json({
     ...transactionRequest,
     timestamp: new Date().toISOString(),
-    status: rewardStatus ? "success" : "error",
     note: "placeholder only",
   });
 });
