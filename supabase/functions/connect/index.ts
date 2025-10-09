@@ -49,7 +49,7 @@ function validateTransactionRequest(obj: any) {
   }
   if (amountBigInt <= 0n)
     return { ok: false, error: "Amount must be positive" };
-  return { ok: true, data: { to, amount: amountBigInt } };
+  return { ok: true, data: { to, amount: amountBigInt, rewardId } };
 }
 
 // Types for GitHub API responses
@@ -509,11 +509,6 @@ app.post("/connect/reward", async (c: Context) => {
       return c.json({ error: "User not found" }, 404);
     }
 
-    console.log(user);
-    console.log(
-      `/connect/reward: Dispatching reward to ${user.id} (${user.wallet_address}) for amount ${txRequest.amount}`,
-    );
-
     if (!user.wallet_address) {
       console.error("User has no wallet address:", user.id);
       return c.json({ error: "User has no wallet address" }, 400);
@@ -530,10 +525,16 @@ app.post("/connect/reward", async (c: Context) => {
       return c.json({ error: "Failed to dispatch token reward" }, 500);
     }
 
-    await supabase
+    const { error: updateError } = await supabase
       .from("rewards")
       .update({ status: "distributed" })
       .eq("id", txRequest.rewardId);
+    if (updateError) {
+      console.error(
+        `Failed to update reward status for rewardId ${txRequest.rewardId}:`,
+        updateError,
+      );
+    }
 
     return c.json({
       to: user.wallet_address,
