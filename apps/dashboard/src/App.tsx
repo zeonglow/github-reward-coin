@@ -46,6 +46,7 @@ import { Reward } from "./types/reward";
 // @ts-expect-error - NPM imports in Deno not fully supported by TypeScript
 import { createClient } from "@jsr/supabase__supabase-js";
 import * as supabaseInfo from "./utils/supabase/info";
+import {faker} from '@faker-js/faker'
 
 // Create a single supabase client for interacting with your database
 const supabase = createClient(
@@ -96,23 +97,43 @@ const getActivityIcon = (type: string) => {
 };
 
 const getStatusBadge = (reward: any) => {
-  if (reward.hrApproval) {
-    return (
-      <Badge variant="default" className="bg-green-500">
-        Approved
-      </Badge>
-    );
-  } else if (reward.managerApproval) {
-    return <Badge variant="secondary">HR Review</Badge>;
-  } else {
-    return <Badge variant="outline">Pending Manager</Badge>;
+  switch (reward.status) {
+    case 'pending':
+      return <Badge variant="outline">Pending</Badge>;
+    case 'manager_approved':
+      if (reward.managerApproval?.approved) {
+        return <Badge variant="secondary">HR Review</Badge>;
+      } else {
+        return <Badge variant="outline">Manager Review</Badge>;
+      }
+    case 'fully_approved':
+      return (
+        <Badge variant="default" className="bg-green-500">
+          Fully Approved
+        </Badge>
+      );
+    default:
+      return null;
   }
 };
 
-const RewardCard = ({ reward, onApprove, userRole }: any) => {
+const RewardCard = ({reward, onApprove, userRole}: any) => {
+  const [approving, setApproving] = useState(false);
   const canApprove =
-    (userRole === "manager" && !reward.managerApproval) ||
-    (userRole === "hr" && reward.managerApproval && !reward.hrApproval);
+    (userRole === 'manager' && !reward.managerApproval?.approved) ||
+    (userRole === 'hr' &&
+      reward.managerApproval?.approved &&
+      !reward.hrApproval?.approved);
+
+  const handleApproval = async (rewardId: number, role: string) => {
+    if (!canApprove) {
+      return;
+    }
+
+    setApproving(true);
+    await onApprove(reward.id, userRole)
+    setApproving(false);
+  }
 
   return (
     <Card className="mb-4">
@@ -196,10 +217,12 @@ const RewardCard = ({ reward, onApprove, userRole }: any) => {
 
             {canApprove && (
               <Button
-                onClick={() => onApprove(reward.id, userRole)}
+                onClick={() => handleApproval(reward.id, userRole)}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                Approve ({userRole === "manager" ? "Manager" : "HR"})
+                {approving ? 'Approving...' : `
+                  Approve (${userRole === 'manager' ? 'Manager' : 'HR'})
+                `}
               </Button>
             )}
           </div>
@@ -228,22 +251,31 @@ const ManagerDashboard = () => {
         if (error) {
           console.error("Error fetching rewards:", error);
         } else {
-          console.log("DATA", data);
           setRewards(data || []);
         }
       });
   }, []);
 
-  const handleApprove = (rewardId: number, role: string) => {
+  const handleApprove = async (rewardId: number, role: string) => {
+    const {data: [updatedReward]} = await supabase.from('rewards').update({
+      [role === 'manager'
+              ? 'managerApproval'
+              : 'hrApproval']: {
+        approved: true,
+        approvedAt: new Date().toISOString(),
+        approvedBy: faker.person.fullName()
+      },
+    }).eq('id', rewardId).select();
+
     setRewards((prevRewards) =>
-      prevRewards.map((reward) =>
-        reward.id === rewardId
-          ? {
+        prevRewards.map((reward) =>
+          reward.id === rewardId
+            ? {
               ...reward,
-              [role === "manager" ? "managerApproval" : "hrApproval"]: true,
+              ...updatedReward,
             }
-          : reward,
-      ),
+            : reward,
+        )
     );
     toast.success(
       `Reward approved by ${role === "manager" ? "Manager" : "HR Manager"}`,
@@ -370,7 +402,7 @@ const ManagerDashboard = () => {
         ) : (
           filteredRewards.map((reward) => (
             <RewardCard
-              key={reward.id}
+              key={`${reward.id}-${reward.status}`}
               reward={reward}
               onApprove={handleApprove}
               userRole={userRole}
