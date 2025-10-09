@@ -772,9 +772,7 @@ export default function App() {
 
   // Save active tab to localStorage whenever it changes
   useEffect(() => {
-    if (activeTab !== "livestream") {
-      localStorage.setItem("activeTab", activeTab);
-    }
+    localStorage.setItem("activeTab", activeTab);
   }, [activeTab]);
 
   // Check GitHub connection status on app load
