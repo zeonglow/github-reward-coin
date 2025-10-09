@@ -3,6 +3,7 @@
   "specifiers": {
     "jsr:@supabase/supabase-js@2.49.8": "2.49.8",
     "npm:@eslint/js@^9.34.0": "9.37.0",
+    "npm:@faker-js/faker@10": "10.0.0",
     "npm:@jsr/supabase__supabase-js@^2.49.8": "2.58.0",
     "npm:@next/eslint-plugin-next@^15.5.0": "15.5.4",
     "npm:@nomicfoundation/hardhat-ethers-chai-matchers@*": "3.0.0_@nomicfoundation+hardhat-ethers@4.0.2__hardhat@3.0.7___zod@3.25.76_chai@5.3.3_ethers@6.15.0_hardhat@3.0.7__zod@3.25.76",
@@ -493,6 +494,9 @@
         "@ethersproject/properties",
         "@ethersproject/strings"
       ]
+    },
+    "@faker-js/faker@10.0.0": {
+      "integrity": "sha512-UollFEUkVXutsaP+Vndjxar40Gs5JL2HeLcl8xO1QAjJgOdhc3OmBFWyEylS+RddWaaBiAzH+5/17PLQJwDiLw=="
     },
     "@floating-ui/core@1.7.3": {
       "integrity": "sha512-sGnvb5dmrJaKEZ+LDIpguvdX3bDlEllmv4/ClQ9awcmCZrlx5jQyyMWFM5kBI+EyNOCDDiKk8il0zeuX3Zlg/w==",
@@ -5943,6 +5947,7 @@
         ],
         "packageJson": {
           "dependencies": [
+            "npm:@faker-js/faker@10",
             "npm:@jsr/supabase__supabase-js@^2.49.8",
             "npm:@radix-ui/react-accordion@^1.2.3",
             "npm:@radix-ui/react-alert-dialog@^1.1.6",
