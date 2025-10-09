@@ -43,7 +43,7 @@ import {
   Hourglass,
   ChevronUp,
   ChevronDown,
-} from "lucide-react";
+} from 'lucide-react';
 import {
   Pagination,
   PaginationContent,
@@ -52,14 +52,14 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "./components/ui/pagination";
-import { UnconnectedView } from "./components/UnconnectedView";
-import { DeveloperDashboard } from "./components/DeveloperDashboard";
-import { Reward } from "./types/reward";
+} from './components/ui/pagination';
+import {UnconnectedView} from './components/UnconnectedView';
+import {DeveloperDashboard} from './components/DeveloperDashboard';
+import {Reward} from './types/reward';
 // @ts-expect-error - NPM imports in Deno not fully supported by TypeScript
-import { createClient } from "@jsr/supabase__supabase-js";
-import * as supabaseInfo from "./utils/supabase/info";
-import { faker } from "@faker-js/faker";
+import {createClient} from '@jsr/supabase__supabase-js';
+import * as supabaseInfo from './utils/supabase/info';
+import {faker} from '@faker-js/faker';
 
 
 // Create a single supabase client for interacting with your database
@@ -83,9 +83,9 @@ const getActivityIcon = (type: string) => {
 
 const getStatusBadge = (reward: any) => {
   switch (reward.status) {
-    case "pending":
+    case 'pending':
       return <Badge variant="outline">Pending</Badge>;
-    case "manager_approved":
+    case 'manager_approved':
       if (reward.managerApproval?.approved) {
         return (
           <Badge variant="secondary" className="bg-yellow-500 text-white">
@@ -95,13 +95,13 @@ const getStatusBadge = (reward: any) => {
       } else {
         return <Badge variant="outline">Manager Review</Badge>;
       }
-    case "fully_approved":
+    case 'fully_approved':
       return (
         <Badge variant="default" className="bg-green-500">
           Fully Approved
         </Badge>
       );
-    case "distributed":
+    case 'distributed':
       return (
         <Badge variant="default" className="bg-blue-500">
           Distributed
@@ -118,7 +118,7 @@ const getTimeAgo = (dateString: string) => {
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-  if (diffInSeconds < 60) return "just now";
+  if (diffInSeconds < 60) return 'just now';
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
   if (diffInSeconds < 2592000)
@@ -128,11 +128,11 @@ const getTimeAgo = (dateString: string) => {
   return `${Math.floor(diffInSeconds / 31536000)}y ago`;
 };
 
-const RewardCard = ({ reward, onApprove, userRole }: any) => {
+const RewardCard = ({reward, onApprove, userRole}: any) => {
   const [approving, setApproving] = useState(false);
   const canApprove =
-    (userRole === "manager" && !reward.managerApproval?.approved) ||
-    (userRole === "hr" &&
+    (userRole === 'manager' && !reward.managerApproval?.approved) ||
+    (userRole === 'hr' &&
       reward.managerApproval?.approved &&
       !reward.hrApproval?.approved);
 
@@ -156,15 +156,15 @@ const RewardCard = ({ reward, onApprove, userRole }: any) => {
             <CardTitle className="flex items-center gap-2">
               {reward.developer.name || reward.developer.github_username}
               {getStatusBadge(reward)}
-              <Clock className="w-4 h-4 mr-1" />
+              <Clock className="w-4 h-4 mr-1"/>
               <span>{getTimeAgo(reward.createdAt.toString())}</span>
             </CardTitle>
             <CardDescription>
               Period:
-              {new Date(reward.createdAt).toLocaleDateString("en-US", {
-                month: "long",
-                year: "numeric",
-              })}{" "}
+              {new Date(reward.createdAt).toLocaleDateString('en-US', {
+                month: 'long',
+                year: 'numeric',
+              })}{' '}
               • Wallet: {walletAddress.slice(0, 6)}...
               {walletAddress.slice(-4)}
             </CardDescription>
@@ -242,9 +242,9 @@ const RewardCard = ({ reward, onApprove, userRole }: any) => {
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 {approving
-                  ? "Approving..."
+                  ? 'Approving...'
                   : `
-                  Approve (${userRole === "manager" ? "Manager" : "HR"})
+                  Approve (${userRole === 'manager' ? 'Manager' : 'HR'})
                 `}
               </Button>
             )}
@@ -258,18 +258,18 @@ const RewardCard = ({ reward, onApprove, userRole }: any) => {
 const ManagerDashboard = () => {
   const [rewards, setRewards] = useState([]);
   const [developers, setDevelopers] = useState([]);
-  const [userRole, setUserRole] = useState<"manager" | "hr">(() => {
-    const saved = localStorage.getItem("manager_userRole");
-    return (saved as "manager" | "hr") || "manager";
+  const [userRole, setUserRole] = useState<'manager' | 'hr'>(() => {
+    const saved = localStorage.getItem('manager_userRole');
+    return (saved as 'manager' | 'hr') || 'manager';
   });
   const [filterStatus, setFilterStatus] = useState(() => {
-    return localStorage.getItem("manager_filterStatus") || "all";
+    return localStorage.getItem('manager_filterStatus') || 'all';
   });
   const [filterDeveloperId, setFilterDeveloperId] = useState(() => {
-    return localStorage.getItem("manager_filterDeveloperId") || "all";
+    return localStorage.getItem('manager_filterDeveloperId') || 'all';
   });
   const [order, setOrder] = useState(() => {
-    return localStorage.getItem("manager_order") || "desc";
+    return localStorage.getItem('manager_order') || 'desc';
   });
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -286,44 +286,68 @@ const ManagerDashboard = () => {
 
   // Persist userRole to localStorage
   useEffect(() => {
-    localStorage.setItem("manager_userRole", userRole);
+    localStorage.setItem('manager_userRole', userRole);
   }, [userRole]);
 
   // Persist filterStatus to localStorage
   useEffect(() => {
-    localStorage.setItem("manager_filterStatus", filterStatus);
+    localStorage.setItem('manager_filterStatus', filterStatus);
   }, [filterStatus]);
 
   // Persist filterDeveloperId to localStorage
   useEffect(() => {
-    localStorage.setItem("manager_filterDeveloperId", filterDeveloperId);
+    localStorage.setItem('manager_filterDeveloperId', filterDeveloperId);
   }, [filterDeveloperId]);
 
-  const fetchRewards = ( from: number, to: number ,order: "asc" | "desc" = "desc") => {
-    supabase
-      .from("rewards")
+  const fetchRewards = (from: number, to: number, order: 'asc' | 'desc' = 'desc') => {
+    let query = supabase
+      .from('rewards')
       .select(
         `*,
         developer:users!developerId(id, github_username, name, email, walletAddress:wallet_address),
         activities:reward_activities(*)`,
-        { count: "exact",}
+        {count: 'exact',}
       )
-      .order("createdAt", {
-        ascending: order === "asc",
-      }).range(from, to)
-      .then(({ data, count, error }) => {
-        if (error) {
-          console.error("Error fetching rewards:", error);
-          return;
-        }
+      .order('createdAt', {
+        ascending: order === 'asc',
+      }).range(from, to);
 
-          setRewards(data || []);
-          setTotalRewards(count);
-      });
+    if (filterStatus === 'pending-manager') {
+      query = query.in('status', ['pending', 'manager_approved']).filter('managerApproval->>approved', 'eq', 'false');
+    }
+
+    if (filterStatus === 'pending-hr') {
+      query = query.eq('status', 'manager_approved').filter('hrApproval->>approved', 'eq', 'false');
+    }
+
+    if (filterStatus === 'approved') {
+      query = query.eq('status', 'fully_approved');
+    }
+
+    if (filterStatus === 'distributed') {
+      query = query.eq('status', 'distributed');
+    }
+
+    if (filterDeveloperId !== 'all') {
+      query = query.eq('developerId', filterDeveloperId);
+    }
+
+    query.then(({data, count, error}) => {
+      if (error) {
+        console.error('Error fetching rewards:', error);
+        return;
+      }
+
+      setRewards(data || []);
+      setTotalRewards(count);
+    });
   };
 
   useEffect(() => {
-    supabase.from('metrics').select().in('name', ['totalPending', 'totalTokens', 'activeDevelopers']).then(({data: metrics, error}) => {
+    supabase.from('metrics').select().in('name', ['totalPending', 'totalTokens', 'activeDevelopers']).then(({
+                                                                                                              data: metrics,
+                                                                                                              error
+                                                                                                            }) => {
       if (error) {
         console.error('Error fetching metrics:', error);
         return;
@@ -352,7 +376,7 @@ const ManagerDashboard = () => {
     // 2. Build the Supabase query
     supabase
       .from('rewards')
-      .select('id', { count: 'exact', head: true }) // Use head: true to only get the count
+      .select('id', {count: 'exact', head: true}) // Use head: true to only get the count
       .in('status', ['fully_approved', 'distributed']) // Filter by status
       .gte('createdAt', startOfMonth) // created_at >= start of the current month
       .lt('createdAt', startOfNextMonth) // created_at < start of the next month
@@ -365,14 +389,14 @@ const ManagerDashboard = () => {
         setStats(prevState => {
           return {...prevState, completedThisMonth: count || 0}
         })
-    });
+      });
 
     supabase
-      .from("users")
-      .select("id, name, github_username")
-      .then(({ data, error }) => {
+      .from('users')
+      .select('id, name, github_username')
+      .then(({data, error}) => {
         if (error) {
-          console.error("Error fetching users:", error);
+          console.error('Error fetching users:', error);
         } else {
           setDevelopers(data || []);
         }
@@ -382,9 +406,9 @@ const ManagerDashboard = () => {
   useEffect(() => {
     const from = (currentPage - 1) * itemsPerPage;
     const to = currentPage * itemsPerPage - 1;
-    fetchRewards(from, to, order as "asc" | "desc");
-    localStorage.setItem("manager_order", order);
-  }, [order, currentPage, filterStatus]);
+    fetchRewards(from, to, order as 'asc' | 'desc');
+    localStorage.setItem('manager_order', order);
+  }, [order, currentPage, filterStatus, filterDeveloperId]);
 
   const sendTokenReward = async (
     rewardId: number,
@@ -394,28 +418,28 @@ const ManagerDashboard = () => {
     try {
       // Check if user is already connected by calling the connect endpoint
       const serverUrl =
-        (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:54321";
+        (import.meta as any).env?.VITE_SERVER_URL || 'http://localhost:54321';
       const url =
-        serverUrl === "http://localhost:8000"
+        serverUrl === 'http://localhost:8000'
           ? new URL(`${serverUrl}/connect/reward`)
           : new URL(`${serverUrl}/functions/v1/connect/reward`);
       const response = await fetch(url.toString(), {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ rewardId, to, amount: String(amount) }),
+        body: JSON.stringify({rewardId, to, amount: String(amount)}),
       });
 
       if (response.ok) {
         // Handle successful response
-        const { status } = await response.json();
-        if (status === "success") {
-          toast.success("Token reward sent successfully");
+        const {status} = await response.json();
+        if (status === 'success') {
+          toast.success('Token reward sent successfully');
         }
       }
     } catch (error) {
-      console.error("Error sending token reward:", error);
+      console.error('Error sending token reward:', error);
     }
   };
 
@@ -423,24 +447,24 @@ const ManagerDashboard = () => {
     const {
       data: [updatedReward],
     } = await supabase
-      .from("rewards")
+      .from('rewards')
       .update({
-        [role === "manager" ? "managerApproval" : "hrApproval"]: {
+        [role === 'manager' ? 'managerApproval' : 'hrApproval']: {
           approved: true,
           approvedAt: new Date().toISOString(),
           approvedBy: faker.person.fullName(),
         },
       })
-      .eq("id", rewardId)
+      .eq('id', rewardId)
       .select();
 
     setRewards((prevRewards) =>
       prevRewards.map((reward) =>
         reward.id === rewardId
           ? {
-              ...reward,
-              ...updatedReward,
-            }
+            ...reward,
+            ...updatedReward,
+          }
           : reward,
       ),
     );
@@ -449,47 +473,19 @@ const ManagerDashboard = () => {
     );
 
     // if both approvals are done, update status to fully_approved
-    const reward = { ...updatedReward };
+    const reward = {...updatedReward};
     if (reward.managerApproval?.approved && reward.hrApproval?.approved) {
       // fully approve the reward
       await supabase
-        .from("rewards")
-        .update({ status: "fully_approved" })
-        .eq("id", reward.id);
+        .from('rewards')
+        .update({status: 'fully_approved'})
+        .eq('id', reward.id);
 
       // send token to developer's wallet
       await sendTokenReward(reward.id, reward.developerId, reward.totalTokens);
-      toast.success("Tokens distributed to developer's wallet");
+      toast.success('Tokens distributed to developer\'s wallet');
     }
   };
-
-  const filteredRewards = rewards.filter((reward) => {
-    const filterByDeveloperId =
-      filterDeveloperId === "all" || reward.developerId === filterDeveloperId;
-
-    if (filterStatus === "pending-manager")
-      return (
-        ["manager_approved", "pending"].includes(reward.status) &&
-        !reward.managerApproval?.approved &&
-        filterByDeveloperId
-      );
-
-    if (filterStatus === "pending-hr")
-      return (
-        reward.status === "manager_approved" &&
-        !reward.hrApproval?.approved &&
-        filterByDeveloperId
-      );
-
-    if (filterStatus === "approved")
-      return reward.status === "fully_approved" && filterByDeveloperId;
-
-    if (!filterByDeveloperId) {
-      return false;
-    }
-
-    return true;
-  });
 
   // Reset to page 1 when filter changes
   React.useEffect(() => {
@@ -500,7 +496,7 @@ const ManagerDashboard = () => {
   const totalPages = Math.ceil(totalRewards / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedRewards = filteredRewards.slice(startIndex, endIndex);
+  const paginatedRewards = rewards.slice(startIndex, endIndex);
 
   return (
     <div className="p-6 space-y-6">
@@ -589,12 +585,13 @@ const ManagerDashboard = () => {
             <SelectItem value="pending-manager">Pending Manager</SelectItem>
             <SelectItem value="pending-hr">Pending HR</SelectItem>
             <SelectItem value="approved">Approved</SelectItem>
+            <SelectItem value="distributed">Distributed</SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={filterDeveloperId} onValueChange={setFilterDeveloperId}>
           <SelectTrigger className="w-48">
-            <SelectValue />
+            <SelectValue/>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Developers</SelectItem>
@@ -608,33 +605,33 @@ const ManagerDashboard = () => {
 
         <div className="flex">
           <Button
-            onClick={() => setOrder("asc")}
-            variant={order === "asc" ? "default" : "outline"}
+            onClick={() => setOrder('asc')}
+            variant={order === 'asc' ? 'default' : 'outline'}
             className={`rounded-r-none ${
-              order === "asc"
-                ? "bg-blue-600 text-white"
-                : "bg-white border-gray-300"
+              order === 'asc'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white border-gray-300'
             }`}
           >
-            <ChevronUp className="w-4 h-4" />
+            <ChevronUp className="w-4 h-4"/>
           </Button>
           <Button
-            onClick={() => setOrder("desc")}
-            variant={order === "desc" ? "default" : "outline"}
+            onClick={() => setOrder('desc')}
+            variant={order === 'desc' ? 'default' : 'outline'}
             className={`rounded-l-none border-l-0 ${
-              order === "desc"
-                ? "bg-blue-600 text-white"
-                : "bg-white border-gray-300"
+              order === 'desc'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white border-gray-300'
             }`}
           >
-            <ChevronDown className="w-4 h-4" />
+            <ChevronDown className="w-4 h-4"/>
           </Button>
         </div>
       </div>
 
       {/* Rewards List */}
       <div>
-        {filteredRewards.length === 0 ? (
+        {rewards.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
               <Trophy className="w-12 h-12 mx-auto text-gray-400 mb-4"/>
@@ -666,14 +663,14 @@ const ManagerDashboard = () => {
                         }
                         className={
                           currentPage === 1
-                            ? "pointer-events-none opacity-50"
-                            : "cursor-pointer"
+                            ? 'pointer-events-none opacity-50'
+                            : 'cursor-pointer'
                         }
                         size="default"
                       />
                     </PaginationItem>
 
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    {Array.from({length: totalPages}, (_, i) => i + 1).map(
                       (page) => (
                         <PaginationItem key={page}>
                           <PaginationLink
@@ -697,8 +694,8 @@ const ManagerDashboard = () => {
                         }
                         className={
                           currentPage === totalPages
-                            ? "pointer-events-none opacity-50"
-                            : "cursor-pointer"
+                            ? 'pointer-events-none opacity-50'
+                            : 'cursor-pointer'
                         }
                         size="default"
                       />
@@ -743,13 +740,13 @@ export default function App() {
       try {
         // Check if user is already connected by calling the connect endpoint
         const serverUrl =
-          (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:54321";
+          (import.meta as any).env?.VITE_SERVER_URL || 'http://localhost:54321';
         const url =
-          serverUrl === "http://localhost:8000"
+          serverUrl === 'http://localhost:8000'
             ? new URL(`${serverUrl}/connect`)
             : new URL(`${serverUrl}/functions/v1/connect`);
         const response = await fetch(url.toString(), {
-          method: "GET",
+          method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -833,10 +830,10 @@ export default function App() {
   const handleConnectGithub = () => {
     // Redirect to server-side GitHub OAuth endpoint
     const serverUrl =
-      (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:54321";
-    console.log("Redirecting to GitHub OAuth at:", serverUrl);
+      (import.meta as any).env?.VITE_SERVER_URL || 'http://localhost:54321';
+    console.log('Redirecting to GitHub OAuth at:', serverUrl);
     const url =
-      serverUrl === "http://localhost:8000"
+      serverUrl === 'http://localhost:8000'
         ? new URL(`${serverUrl}/connect`)
         : new URL(`${serverUrl}/functions/v1/connect`);
     window.location.href = `${url}/github`;
@@ -881,7 +878,7 @@ export default function App() {
 
         <div className="container mx-auto p-6">
           {/* Content skeleton based on active tab */}
-          {activeTab === "manager" && (
+          {activeTab === 'manager' && (
             <div className="space-y-6">
               {/* Manager dashboard skeleton */}
               <div className="flex justify-between items-center">
@@ -909,7 +906,7 @@ export default function App() {
             </div>
           )}
 
-          {activeTab === "developer" && (
+          {activeTab === 'developer' && (
             <div className="space-y-6">
               {/* Developer dashboard skeleton */}
               <div className="flex justify-between items-center">
@@ -942,7 +939,7 @@ export default function App() {
             </div>
           )}
 
-          {activeTab === "unconnected" && (
+          {activeTab === 'unconnected' && (
             <div className="space-y-6">
               {/* Unconnected view skeleton */}
               <div className="text-center space-y-4">
@@ -973,7 +970,7 @@ export default function App() {
                     variant="default"
                     className="bg-green-100 text-green-800"
                   >
-                    <Hourglass className="w-3 h-3 mr-1" />
+                    <Hourglass className="w-3 h-3 mr-1"/>
                     Checking GitHub status...
                   </Badge>
                 </div>
