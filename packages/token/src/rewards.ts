@@ -1,6 +1,7 @@
-import { ethers, Wallet } from "ethers";
+import { ethers, HDNodeWallet, Wallet } from "ethers";
 import ERC20_ABI from "./erc20abi.json" with { type: "json" };
 import * as dotenv from "dotenv";
+
 dotenv.config();
 
 export interface IRewarderOptions {
@@ -53,6 +54,20 @@ class Rewarder {
       receipt,
     };
   }
+  async createWallet() {
+    const mnemonic = Wallet.createRandom().mnemonic;
+    if (!mnemonic) {
+      throw new Error("Mnemonic creation failed");
+    }
+    const wallet = HDNodeWallet.fromMnemonic(mnemonic).connect(this.provider);
+
+    return {
+      mnemonic,
+      privateKey: wallet.privateKey,
+      publicKey: wallet.publicKey,
+      address: wallet.address,
+    };
+  }
 }
 
 const rewarder = new Rewarder();
@@ -64,4 +79,8 @@ export async function giveReward(args: {
 }) {
   const { to, amount, confirm = false } = args;
   return await rewarder.sendReward(to, amount, confirm);
+}
+
+export async function createWallet() {
+  return await rewarder.createWallet();
 }
