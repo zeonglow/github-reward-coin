@@ -45,6 +45,7 @@ import {
 import { UnconnectedView } from "./components/UnconnectedView";
 import { DeveloperDashboard } from "./components/DeveloperDashboard";
 import { LiveStream } from "./components/LiveStream";
+import { Performance } from "./components/Performance";
 import { Reward } from "./types/reward";
 // @ts-expect-error - NPM imports in Deno not fully supported by TypeScript
 import { createClient } from "@jsr/supabase__supabase-js";
@@ -103,7 +104,13 @@ const getStatusBadge = (reward: any) => {
   }
 };
 
-const RewardCard = ({ reward, onApprove, userRole }: any) => {
+const RewardCard = ({
+  reward,
+  onApprove,
+  userRole,
+  setLiveStreamUser,
+  setActiveTab,
+}: any) => {
   const [approving, setApproving] = useState(false);
   const canApprove =
     (userRole === "manager" && !reward.managerApproval?.approved) ||
@@ -129,7 +136,16 @@ const RewardCard = ({ reward, onApprove, userRole }: any) => {
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="flex items-center gap-2">
-              {reward.developer.name || reward.developer.github_username}
+              <a
+                onClick={() => {
+                  setLiveStreamUser(reward.developer.id);
+                  localStorage.setItem("liveStreamUser", reward.developer.id);
+                  setActiveTab("performance");
+                }}
+                className="cursor-pointer hover:text-gray-400"
+              >
+                {reward.developer.name || reward.developer.github_username}
+              </a>
               {getStatusBadge(reward)}
               <Clock className="w-4 h-4 mr-1" />
               <span>{getTimeAgo(reward.createdAt.toString())}</span>
@@ -655,6 +671,8 @@ const ManagerDashboard = ({
                   reward={reward}
                   onApprove={handleApprove}
                   userRole={userRole}
+                  setLiveStreamUser={setLiveStreamUser}
+                  setActiveTab={setActiveTab}
                 />
               </motion.div>
             ))}
@@ -1048,7 +1066,7 @@ export default function App() {
               onValueChange={setActiveTab}
               className="w-full"
             >
-              <TabsList className={`grid w-full max-w-2xl grid-cols-3`}>
+              <TabsList className={`grid w-full max-w-2xl grid-cols-4`}>
                 <TabsTrigger value="manager">Manager View</TabsTrigger>
                 <TabsTrigger
                   value={isGitHubConnected ? "developer" : "unconnected"}
@@ -1056,6 +1074,7 @@ export default function App() {
                   Developer View
                 </TabsTrigger>
                 <TabsTrigger value="livestream">Live Stream</TabsTrigger>
+                <TabsTrigger value="performance">Performance</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -1086,6 +1105,14 @@ export default function App() {
         )}
         {activeTab === "livestream" && (
           <LiveStream
+            supabase={supabase}
+            liveStreamUser={liveStreamUser}
+            setLiveStreamUser={setLiveStreamUser}
+            developers={developers}
+          />
+        )}
+        {activeTab === "performance" && (
+          <Performance
             supabase={supabase}
             liveStreamUser={liveStreamUser}
             setLiveStreamUser={setLiveStreamUser}

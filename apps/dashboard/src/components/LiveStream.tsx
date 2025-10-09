@@ -77,7 +77,6 @@ export function LiveStream({
 }: LiveStreamProps) {
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [rewards, setRewards] = useState([]);
   const [liveEvents, setLiveEvents] = useState([]);
 
   // Debouncing and duplicate prevention
@@ -152,7 +151,7 @@ export function LiveStream({
             );
             const newReward = !lastLiveEvent;
 
-            if (!lastLiveEvent) {
+            if (newReward) {
               try {
                 const result = await supabase
                   .from("rewards")
@@ -166,7 +165,9 @@ export function LiveStream({
                   .order("createdAt", {
                     ascending: false,
                   });
-                rewardsRef.current = result.data || [];
+                if (result?.data?.length > 0) {
+                  rewardsRef.current = result.data || [];
+                }
               } catch (error) {}
             }
 
@@ -453,9 +454,7 @@ export function LiveStream({
                               </code>
                             </p>
                           ) : (
-                            <p className="text-sm text-gray-600 mt-1">
-                              No activities
-                            </p>
+                            <p className="text-sm text-gray-600 mt-1">&nbsp;</p>
                           )}
                         </div>
                         <div className="text-right flex-shrink-0">
