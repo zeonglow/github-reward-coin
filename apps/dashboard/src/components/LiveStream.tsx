@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -16,7 +16,6 @@ import {
 import { Progress } from "./ui/progress";
 import { Badge } from "./ui/badge";
 import { Label } from "./ui/label";
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import {
   GitCommit,
   CheckCircle,
@@ -70,16 +69,6 @@ const getEventColor = (type: string) => {
   }
 };
 
-const formatTimestamp = (timestamp: string) => {
-  const date = new Date(timestamp);
-  return date.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-};
-
 export function LiveStream({
   supabase,
   developers,
@@ -90,6 +79,57 @@ export function LiveStream({
   const [currentTime, setCurrentTime] = useState(new Date());
   const [rewards, setRewards] = useState([]);
   const [liveEvents, setLiveEvents] = useState([]);
+
+  // Debouncing and duplicate prevention
+  const processedEvents = useRef(new Set());
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+  const pendingUpdates = useRef<any[]>([]);
+  const liveEventsRef = useRef([]);
+  const rewardsRef = useRef([]);
+
+  // Debounced update function to prevent rapid updates
+  const debouncedUpdate = useCallback((newEvent: any) => {
+    // Clear existing timeout
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+    }
+
+    // Add to pending updates
+    pendingUpdates.current.push(newEvent);
+
+    // Set new timeout
+    debounceTimeout.current = setTimeout(() => {
+      if (pendingUpdates.current.length > 0) {
+        // Process only the latest event to avoid duplicates
+        const latestEvent =
+          pendingUpdates.current[pendingUpdates.current.length - 1];
+
+        setLiveEvents((prevEvents) => {
+          // Check if this event was already processed
+          const eventKey = `${latestEvent.id}-${latestEvent.time}`;
+          if (processedEvents.current.has(eventKey)) {
+            return prevEvents;
+          }
+
+          // Mark as processed
+          processedEvents.current.add(eventKey);
+
+          // Add to events
+          const newLiveEvents = [...prevEvents];
+          newLiveEvents.unshift(latestEvent);
+          // Keep only last 50 events to prevent memory issues
+          newLiveEvents.slice(0, 50);
+
+          liveEventsRef.current = newLiveEvents;
+
+          return newLiveEvents;
+        });
+
+        // Clear pending updates
+        pendingUpdates.current = [];
+      }
+    }, 500); // 500ms debounce
+  }, []);
 
   useEffect(() => {
     supabase
@@ -102,18 +142,18 @@ export function LiveStream({
           table: "rewards",
         },
         (payload) => {
-          console.log("payload", payload);
           if (
             (payload.eventType === "UPDATE" ||
               payload.eventType === "INSERT") &&
             payload.new?.developerId === liveStreamUser
           ) {
-            const lastLiveEvent = liveEvents[0];
+            const lastLiveEvent = liveEventsRef.current[0];
+
             const statusChanged =
               lastLiveEvent && lastLiveEvent?.status !== payload.new?.status;
             const managerApproval =
               lastLiveEvent &&
-              lastLiveEvent?.managerApproval === false &&
+              lastLiveEvent?.managerApproval?.approved === false &&
               payload.new?.managerApproval?.approved === true;
 
             let message =
@@ -145,15 +185,15 @@ export function LiveStream({
             }
 
             let repo = "";
-            const activities = rewards.find(
+            const activities = rewardsRef.current.find(
               (r) => r.id === payload.new?.id,
             )?.activities;
             if (activities?.length > 0) {
               repo = activities?.[0]?.repository;
             }
 
-            const newLiveEvents = [...liveEvents];
-            newLiveEvents.unshift({
+            // Create the event object
+            const newEvent = {
               id: payload.commit_timestamp,
               type,
               message,
@@ -163,14 +203,22 @@ export function LiveStream({
               status: payload.new?.status,
               managerApproval: payload.new?.managerApproval,
               hrApproval: payload.new?.hrApproval,
-            });
+            };
 
-            setLiveEvents(newLiveEvents);
+            // Use debounced update instead of direct state update
+            debouncedUpdate(newEvent);
           }
         },
       )
       .subscribe();
-  }, []);
+
+    // Cleanup function
+    return () => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+    };
+  }, [debouncedUpdate]);
 
   useEffect(() => {
     let selectedUser = liveStreamUser;
@@ -200,7 +248,7 @@ export function LiveStream({
           if (error) {
             console.error("Error fetching rewards:", error);
           } else {
-            setRewards(data || []);
+            rewardsRef.current = data || [];
 
             const liveEvents = data.map((r) => {
               let type = "commit";
@@ -230,12 +278,13 @@ export function LiveStream({
                 time: r.updatedAt,
                 tokens: r.totalTokens,
                 status: r.status,
-                managerApproval: r.managerApproval?.approved ? true : false,
-                hrApproval: r.hrApproval?.approved ? true : false,
+                managerApproval: r.managerApproval,
+                hrApproval: r.hrApproval,
               };
             });
             // Set initial events
             setLiveEvents(liveEvents);
+            liveEventsRef.current = liveEvents;
           }
         });
     }
