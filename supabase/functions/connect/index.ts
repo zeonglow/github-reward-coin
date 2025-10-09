@@ -72,7 +72,8 @@ interface GithubPushEvent {
   commits: Array<{
     id: string;
     message: string;
-    committer: { username: string };
+    author: { username: string; email: string };
+    committer: { username: string; email: string };
   }>;
   repository: {
     full_name: string;
@@ -373,10 +374,11 @@ app.post("/connect/github/webhook/push", async (c: Context) => {
 
         const data = (await commitRes.json()) as CommitResponse;
         const username =
-          commit?.committer?.username ||
+          commit?.author?.username ||
           data.author?.login ||
-          data.commit?.author?.name ||
-          "unknown";
+          commit?.committer?.username ||
+          commit?.author?.email ||
+          commit?.committer?.email;
 
         const additions =
           data.files?.reduce(
@@ -421,11 +423,19 @@ app.post("/connect/github/webhook/push", async (c: Context) => {
 
     // Save to reward
     for (const [username, stats] of Object.entries(authorStats)) {
-      const user = await supabase
+      let user = await supabase
         .from("users")
         .select("id")
         .eq("github_username", username)
         .single();
+      if (!user.data?.id) {
+        user = await supabase
+          .from("users")
+          .select("id")
+          .eq("email", username) // try email if username lookup fails
+          .single();
+      }
+
       if (!user.data?.id) {
         console.error(`No user found for GitHub username: ${username}`);
         continue;
