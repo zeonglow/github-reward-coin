@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Card,
   CardContent,
@@ -32,6 +32,7 @@ import {
   Hourglass,
   ChevronUp,
   ChevronDown,
+  Coins,
 } from "lucide-react";
 import {
   Pagination,
@@ -144,6 +145,7 @@ const RewardCard = ({ reward, onApprove, userRole }: any) => {
           </div>
           <div className="text-right">
             <div className="font-semibold text-2xl text-blue-600">
+              <Coins className="h-4 w-4 inline" />
               {reward.totalTokens} CKC
             </div>
             <div className="text-sm text-gray-500">Total Reward</div>
@@ -256,7 +258,17 @@ const ManagerDashboard = ({
     return localStorage.getItem("manager_order") || "desc";
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const [totalRewards, setTotalRewards] = useState(0);
+
+  const [stats, setStats] = useState({
+    totalPending: 0,
+    totalTokens: 0,
+    activeDevelopers: 0,
+    completedThisMonth: 0,
+  });
+  const paginationResetRef = useRef(false);
+
+  const itemsPerPage = 8;
 
   // Persist userRole to localStorage
   useEffect(() => {
@@ -278,50 +290,133 @@ const ManagerDashboard = ({
     }
   }, [filterDeveloperId]);
 
-  const fetchRewards = (order: "asc" | "desc" = "desc") => {
-    supabase
+  const fetchRewards = (
+    from: number,
+    to: number,
+    order: "asc" | "desc" = "desc",
+  ) => {
+    let query = supabase
       .from("rewards")
       .select(
         `*,
         developer:users!developerId(id, github_username, name, email, walletAddress:wallet_address),
         activities:reward_activities(*)`,
+        { count: "exact" },
       )
       .order("createdAt", {
         ascending: order === "asc",
-      })
-      .then(({ data, error }) => {
-        if (error) {
-          console.error("Error fetching rewards:", error);
-        } else {
-          setRewards(data || []);
-        }
       });
+
+    if (filterStatus === "pending-manager") {
+      query = query
+        .in("status", ["pending", "manager_approved"])
+        .filter("managerApproval->>approved", "eq", "false");
+    }
+
+    if (filterStatus === "pending-hr") {
+      query = query
+        .eq("status", "manager_approved")
+        .filter("hrApproval->>approved", "eq", "false");
+    }
+
+    if (filterStatus === "approved") {
+      query = query.eq("status", "fully_approved");
+    }
+
+    if (filterStatus === "distributed") {
+      query = query.eq("status", "distributed");
+    }
+
+    if (filterDeveloperId !== "all") {
+      query = query.eq("developerId", filterDeveloperId);
+    }
+
+    query.range(from, to).then(({ data, count, error }) => {
+      if (error) {
+        console.error("Error fetching rewards:", error);
+        return;
+      }
+
+      setRewards(data || []);
+      setTotalRewards(count);
+    });
   };
 
   useEffect(() => {
     supabase
-      .from("rewards")
-      .select(
-        `
-        *,
-        developer:users!developerId(id, github_username, name, email, walletAddress:wallet_address),
-        activities:reward_activities(*)
-      `,
-      )
-      .order("createdAt", { ascending: false })
-      .then(({ data, error }) => {
+      .from("metrics")
+      .select()
+      .in("name", ["totalPending", "totalTokens", "activeDevelopers"])
+      .then(({ data: metrics, error }) => {
         if (error) {
-          console.error("Error fetching rewards:", error);
-        } else {
-          setRewards(data || []);
+          console.error("Error fetching metrics:", error);
+          return;
         }
+
+        const newStats = metrics.reduce((accu, metric) => {
+          accu[metric.name] = metric.value;
+          return accu;
+        }, {});
+
+        setStats((prevState) => {
+          return { ...prevState, ...newStats };
+        });
+      });
+
+    // 1. Determine the start and end of the current month
+    const now = new Date();
+
+    // Start of the current month (e.g., October 1, 2025 00:00:00)
+    const startOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1,
+    ).toISOString();
+
+    // Start of the next month (used for the less than filter)
+    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const startOfNextMonth = nextMonth.toISOString();
+
+    // 2. Build the Supabase query
+    supabase
+      .from("rewards")
+      .select("id", { count: "exact", head: true }) // Use head: true to only get the count
+      .in("status", ["fully_approved", "distributed"]) // Filter by status
+      .gte("createdAt", startOfMonth) // created_at >= start of the current month
+      .lt("createdAt", startOfNextMonth) // created_at < start of the next month
+      .then(({ count, error }) => {
+        if (error) {
+          console.error("Error fetching metrics:", error);
+          return;
+        }
+
+        setStats((prevState) => {
+          return { ...prevState, completedThisMonth: count || 0 };
+        });
       });
   }, []);
 
+  // Reset to page 1 when filter changes
   useEffect(() => {
-    fetchRewards(order as "asc" | "desc");
+    setCurrentPage(1);
+    paginationResetRef.current = true;
+    const from = 0;
+    const to = itemsPerPage - 1;
+    fetchRewards(from, to, order as "asc" | "desc");
     localStorage.setItem("manager_order", order);
-  }, [order]);
+  }, [filterStatus, filterDeveloperId]);
+
+  useEffect(() => {
+    if (paginationResetRef.current === true) {
+      paginationResetRef.current = false;
+      return;
+    }
+
+    const from = (currentPage - 1) * itemsPerPage;
+    const to = currentPage * itemsPerPage - 1;
+    fetchRewards(from, to, order as "asc" | "desc");
+    localStorage.setItem("manager_order", order);
+  }, [order, currentPage]);
 
   const sendTokenReward = async (
     rewardId: number,
@@ -400,54 +495,8 @@ const ManagerDashboard = ({
     }
   };
 
-  const filteredRewards = rewards.filter((reward) => {
-    const filterByDeveloperId =
-      filterDeveloperId === "all" || reward.developerId === filterDeveloperId;
-
-    if (filterStatus === "pending-manager")
-      return (
-        ["manager_approved", "pending"].includes(reward.status) &&
-        !reward.managerApproval?.approved &&
-        filterByDeveloperId
-      );
-
-    if (filterStatus === "pending-hr")
-      return (
-        reward.status === "manager_approved" &&
-        !reward.hrApproval?.approved &&
-        filterByDeveloperId
-      );
-
-    if (filterStatus === "approved")
-      return reward.status === "fully_approved" && filterByDeveloperId;
-
-    if (!filterByDeveloperId) {
-      return false;
-    }
-
-    return true;
-  });
-
-  const stats = {
-    totalPending: rewards.filter(
-      (r) => !["fully_approved", "distributed"].includes(r.status),
-    ).length,
-    totalTokens: rewards.reduce((sum, r) => sum + r.totalTokens, 0),
-    activeDevelopers: new Set(rewards.map((r) => r.developerId)).size,
-    completedThisMonth: rewards.filter((r) => r.status === "fully_approved")
-      .length,
-  };
-
-  // Reset to page 1 when filter changes
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [filterStatus]);
-
   // Pagination calculations
-  const totalPages = Math.ceil(filteredRewards.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedRewards = filteredRewards.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(totalRewards / itemsPerPage);
 
   return (
     <div className="p-6 space-y-6">
@@ -536,6 +585,7 @@ const ManagerDashboard = ({
             <SelectItem value="pending-manager">Pending Manager</SelectItem>
             <SelectItem value="pending-hr">Pending HR</SelectItem>
             <SelectItem value="approved">Approved</SelectItem>
+            <SelectItem value="distributed">Distributed</SelectItem>
           </SelectContent>
         </Select>
 
@@ -581,7 +631,7 @@ const ManagerDashboard = ({
 
       {/* Rewards List */}
       <div>
-        {filteredRewards.length === 0 ? (
+        {rewards.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
               <Trophy className="w-12 h-12 mx-auto text-gray-400 mb-4" />
@@ -592,7 +642,7 @@ const ManagerDashboard = ({
           </Card>
         ) : (
           <>
-            {paginatedRewards.map((reward) => (
+            {rewards.map((reward) => (
               <RewardCard
                 key={reward.id}
                 reward={reward}
@@ -934,7 +984,7 @@ export default function App() {
           <div className="header-content">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-2xl font-bold text-gray-900">
-                GitHub Commit Reward Token
+                CodeKudos Coin Reward
               </h1>
               <div className="flex items-center gap-4">
                 {isLoading ? (
