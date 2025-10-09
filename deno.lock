@@ -66,6 +66,7 @@
     "npm:date-fns@^4.1.0": "4.1.0",
     "npm:dotenv@^17.2.3": "17.2.3",
     "npm:embla-carousel-react@^8.6.0": "8.6.0_react@18.3.1_embla-carousel@8.6.0",
+    "npm:esbuild@~0.25.10": "0.25.10",
     "npm:eslint-config-prettier@^10.1.1": "10.1.8_eslint@9.37.0",
     "npm:eslint-plugin-only-warn@^1.1.0": "1.1.0",
     "npm:eslint-plugin-react-hooks@^5.2.0": "5.2.0_eslint@9.37.0",
@@ -5934,7 +5935,7 @@
       "dependencies": [
         "npm:prettier@^3.6.2",
         "npm:turbo@^2.5.8",
-        "npm:typescript@5.9.2"
+        "npm:typescript@^5.9.3"
       ]
     },
     "members": {
@@ -6056,6 +6057,7 @@
             "npm:@types/mocha@^10.0.10",
             "npm:chai@^5.3.3",
             "npm:dotenv@^17.2.3",
+            "npm:esbuild@~0.25.10",
             "npm:ethers@^6.15.0",
             "npm:express@^5.1.0",
             "npm:hardhat@^3.0.6",
