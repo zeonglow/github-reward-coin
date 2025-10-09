@@ -43,6 +43,8 @@ interface RewardActivity {
   points: number;
   type: string;
   rewardId: number;
+  repository: string;
+  ticketId?: string;
 }
 
 interface Reward {
@@ -365,6 +367,7 @@ app.post("/connect/github/webhook/push", async (c: Context) => {
 
         rewardActivities[username].push({
           description: commit.message,
+          repository: repository.full_name,
           points: changes,
           type: "commit",
           rewardId: 0,
