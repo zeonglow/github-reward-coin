@@ -597,8 +597,8 @@ export default function App() {
   const handleConnectGithub = () => {
     // Redirect to server-side GitHub OAuth endpoint
     const serverUrl =
-      (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:3000";
-    window.location.href = `${serverUrl}/connect/github`;
+      (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:54321";
+    window.location.href = `${serverUrl}/functions/v1/connect/github`;
   };
 
   return (

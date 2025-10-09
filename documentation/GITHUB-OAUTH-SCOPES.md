@@ -172,7 +172,7 @@ githubAuthUrl.searchParams.set("scope", "user:email");
 yarn server
 
 # Test OAuth
-curl -I http://localhost:8000/connect/github
+curl -I http://localhost:54321/functions/v1/connect/github
 ```
 
 ### **Check What Data You Get:**

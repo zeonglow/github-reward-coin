@@ -42,8 +42,8 @@ npm run dev
 
 ## 🧪 **Testing the Complete Flow**
 
-1. **Server Health Check**: http://localhost:8000/make-server-b1e42adc/health
-2. **GitHub OAuth**: http://localhost:8000/connect/github
+1. **Server Health Check**: http://localhost:54321/functions/v1/connect
+2. **GitHub OAuth**: http://localhost:54321/functions/v1/connect/github
 3. **Frontend**: http://localhost:3000
 
 ## 🎯 **What's Fixed**
@@ -57,9 +57,9 @@ npm run dev
 ## 🔄 **Complete GitHub OAuth Flow**
 
 1. **User clicks "Connect GitHub"** in your React app
-2. **Frontend redirects** to `http://localhost:8000/connect/github`
+2. **Frontend redirects** to `http://localhost:54321/functions/v1/connect/github`
 3. **Server redirects** to GitHub OAuth
-4. **GitHub redirects back** to `http://localhost:8000/connect/github/callback`
+4. **GitHub redirects back** to `http://localhost:54321/functions/v1/connect/github/callback`
 5. **Server processes OAuth** and saves to Supabase
 6. **Server redirects** to `http://localhost:3000?github_connected=true`
 7. **Frontend shows success toast** and switches to developer view
@@ -92,7 +92,7 @@ echo $SUPABASE_URL
 
 ### If GitHub OAuth fails:
 
-- Check your GitHub OAuth app redirect URI is: `http://localhost:8000/connect/github/callback`
+- Check your GitHub OAuth app redirect URI is: `http://localhost:54321/functions/v1/connect/github/callback`
 - Verify your GitHub client ID and secret
 
 ## 🎉 **You're Ready!**

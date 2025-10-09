@@ -8,9 +8,10 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
     "server": "./scripts/run-server.sh",
-    "server:start": "./scripts/run-server.sh",
     "server:stop": "./scripts/stop-server.sh",
-    "server:debug": "./scripts/debug-oauth.sh"
+    "server:debug": "./scripts/debug-oauth.sh",
+    "functions": "./scripts/start-functions.sh",
+    "functions:deploy": "SUPABASE_ACCESS_TOKEN=sbp_20a68b0be7088a01355c974d05cb334990e636b6 supabase functions deploy connect --project-ref uvkwcralkuwqocgsmcap --no-verify-jwt"
   },
   "devDependencies": {
     "prettier": "^3.6.2",

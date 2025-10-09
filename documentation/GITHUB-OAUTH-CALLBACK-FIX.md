@@ -5,7 +5,7 @@
 GitHub OAuth app callback URL doesn't match your local server:
 
 - **GitHub OAuth app callback**: `https://uvkwcralkuwqocgsmcap.supabase.co/auth/v1/callback`
-- **Your server expects**: `http://localhost:8000/connect/github/callback`
+- **Your server expects**: `http://localhost:54321/functions/v1/connect/github/callback`
 
 ## 🚀 **Solution 1: Update GitHub OAuth App (Recommended for Local Development)**
 
@@ -18,7 +18,7 @@ GitHub OAuth app callback URL doesn't match your local server:
 ### **Step 2: Update Callback URL**
 
 - **Change from**: `https://uvkwcralkuwqocgsmcap.supabase.co/auth/v1/callback`
-- **Change to**: `http://localhost:8000/connect/github/callback`
+- **Change to**: `http://localhost:54321/functions/v1/connect/github/callback`
 - **Save changes**
 
 ### **Step 3: Test the Fix**
@@ -28,7 +28,7 @@ GitHub OAuth app callback URL doesn't match your local server:
 yarn server
 
 # Test OAuth flow
-curl -I http://localhost:8000/connect/github
+curl -I http://localhost:54321/functions/v1/connect/github
 # Should redirect to GitHub without callback errors
 ```
 
@@ -89,7 +89,7 @@ const { data, error } = await supabase.auth.signInWithOAuth({
 ### **After updating GitHub OAuth app:**
 
 1. **Start server**: `yarn server`
-2. **Test OAuth**: Go to `http://localhost:8000/connect/github`
+2. **Test OAuth**: Go to `http://localhost:54321/functions/v1/connect/github`
 3. **Should redirect to GitHub** without callback errors
 4. **After GitHub authorization** - should redirect back to your app
 
@@ -98,7 +98,7 @@ const { data, error } = await supabase.auth.signInWithOAuth({
 1. User clicks "Connect GitHub"
 2. Redirects to GitHub OAuth
 3. User authorizes on GitHub
-4. GitHub redirects to `http://localhost:8000/connect/github/callback`
+4. GitHub redirects to `http://localhost:54321/functions/v1/connect/github/callback`
 5. Your server processes the OAuth callback
 6. Redirects to frontend with success/error
 

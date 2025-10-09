@@ -1,14 +1,36 @@
-import { Hono } from "npm:hono";
+// @no-auth
+// @ts-expect-error - NPM imports in Deno not fully supported by TypeScript
+import { Hono, Context } from "npm:hono";
+// @ts-expect-error - NPM imports in Deno not fully supported by TypeScript
 import { cors } from "npm:hono/cors";
+// @ts-expect-error - NPM imports in Deno not fully supported by TypeScript
 import { logger } from "npm:hono/logger";
+// @ts-expect-error - JSR imports not fully supported by TypeScript yet
 import { createClient } from "jsr:@supabase/supabase-js@2.49.8";
+// @ts-expect-error - Deno requires .ts extension for local imports
+import * as kv from "./kv_store.ts";
+// @ts-expect-error - NPM imports in Deno not fully supported by TypeScript
 import { ethers } from "npm:ethers";
-import * as kv from "./kv_store.tsx";
+
+// Types for GitHub API responses
+interface GitHubUser {
+  id: number;
+  login: string;
+  name: string;
+  email: string;
+  avatar_url: string;
+}
+
+interface GitHubTokenResponse {
+  access_token: string;
+  token_type: string;
+  scope: string;
+}
 
 // Initialize Supabase client
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  Deno.env.get("SUPABASE_ANON_KEY")!,
 );
 const app = new Hono();
 
@@ -27,13 +49,35 @@ app.use(
   }),
 );
 
-// Health check endpoint
-app.get("/make-server-b1e42adc/health", (c) => {
-  return c.json({ status: "ok" });
+// Health check endpoint - publicly accessible
+app.get("/health", (c: Context) => {
+  return c.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    service: "github-reward-coin-server",
+  });
+});
+
+// Debug endpoint to test routing
+app.get("/", (c: Context) => {
+  return c.json({
+    message: "Server is running",
+    timestamp: new Date().toISOString(),
+    routes: ["/health", "/connect/github", "/connect/github/callback"],
+  });
+});
+
+// Handle Supabase path structure - add routes that match what Supabase passes
+app.get("/connect", (c: Context) => {
+  return c.json({
+    message: "Server is running (Supabase path)",
+    timestamp: new Date().toISOString(),
+    routes: ["/connect/github", "/connect/github/callback"],
+  });
 });
 
 // GitHub OAuth endpoints
-app.get("/connect/github", async (c) => {
+app.get("/connect/github", async (c: Context) => {
   try {
     // Generate random state for security
     const state = crypto.randomUUID();
@@ -50,10 +94,35 @@ app.get("/connect/github", async (c) => {
       "client_id",
       Deno.env.get("GITHUB_CLIENT_ID")!,
     );
-    githubAuthUrl.searchParams.set(
-      "redirect_uri",
-      `${c.req.url.split("/connect/github")[0]}/connect/github/callback`,
-    );
+    // Construct the proper callback URL
+    // Check if GITHUB_REDIRECT_URL is set, otherwise use dynamic logic
+    const customRedirectUrl = Deno.env.get("GITHUB_CALLBACK_URL");
+    let callbackUrl;
+
+    if (customRedirectUrl) {
+      // Use the custom redirect URL from environment variable
+      callbackUrl = customRedirectUrl;
+    } else {
+      // Fallback to dynamic logic for backward compatibility
+      const requestUrl = new URL(c.req.url);
+      const isLocalDev =
+        requestUrl.host.includes("kong") ||
+        requestUrl.host.includes("localhost") ||
+        requestUrl.host.includes("127.0.0.1") ||
+        requestUrl.host.includes("supabase_edge_runtime");
+
+      if (isLocalDev) {
+        // Use localhost for local development
+        callbackUrl =
+          "http://127.0.0.1:54321/functions/v1/connect/github/callback";
+      } else {
+        // Use the request origin for production
+        const baseUrl = `${requestUrl.protocol}//${requestUrl.host}`;
+        callbackUrl = `${baseUrl}/functions/v1/connect/github/callback`;
+      }
+    }
+
+    githubAuthUrl.searchParams.set("redirect_uri", callbackUrl);
     githubAuthUrl.searchParams.set("scope", "user:email,repo");
     githubAuthUrl.searchParams.set("state", state);
 
@@ -66,7 +135,7 @@ app.get("/connect/github", async (c) => {
   }
 });
 
-app.get("/connect/github/callback", async (c) => {
+app.get("/connect/github/callback", async (c: Context) => {
   try {
     const { code, state, error } = c.req.query();
 
@@ -108,7 +177,7 @@ app.get("/connect/github/callback", async (c) => {
       throw new Error("Failed to exchange code for token");
     }
 
-    const tokenData = await tokenResponse.json();
+    const tokenData = (await tokenResponse.json()) as GitHubTokenResponse;
 
     // Fetch user info from GitHub
     const userResponse = await fetch("https://api.github.com/user", {
@@ -122,7 +191,7 @@ app.get("/connect/github/callback", async (c) => {
       throw new Error("Failed to fetch GitHub user info");
     }
 
-    const githubUser = await userResponse.json();
+    const githubUser = (await userResponse.json()) as GitHubUser;
 
     // For now, we'll use a placeholder user ID
     // In a real app, you'd identify the current user from session/auth
@@ -173,9 +242,23 @@ app.get("/connect/github/callback", async (c) => {
   } catch (error) {
     console.error("GitHub OAuth callback error:", error);
     return c.redirect(
-      `${Deno.env.get("FRONTEND_URL")}?github_error=${encodeURIComponent(error.message)}`,
+      `${Deno.env.get("FRONTEND_URL")}?github_error=${encodeURIComponent((error as Error).message)}`,
     );
   }
+});
+
+// Catch-all route for debugging
+app.all("*", (c: Context) => {
+  console.log(`Unmatched route: ${c.req.method} ${c.req.url}`);
+  return c.json(
+    {
+      error: "Route not found",
+      method: c.req.method,
+      url: c.req.url,
+      path: new URL(c.req.url).pathname,
+    },
+    404,
+  );
 });
 
 Deno.serve(app.fetch);
