@@ -18,14 +18,12 @@ class Rewarder {
       masterAddress = process.env.KUDOS_MASTER_WALLET ?? "",
       tokenContractAddress = process.env.KUDOS_TOKEN_CONTRACT_ADDRESS ?? "",
     } = options ?? {};
-    this.rpcUrl = rpcUrl;
     this.provider = new ethers.JsonRpcProvider(rpcUrl);
     this.wallet = new Wallet(walletKey, this.provider);
     this.masterAddress = masterAddress;
     this.tokenContractAddress = tokenContractAddress;
   }
 
-  private readonly rpcUrl: string;
   private readonly provider: ethers.JsonRpcProvider;
   private readonly wallet: ethers.Wallet;
   private readonly masterAddress: string;

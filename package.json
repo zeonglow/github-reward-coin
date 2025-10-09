@@ -7,7 +7,7 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "server": "./scripts/run-server.sh",
+    "server": "./scripts/start-server.sh",
     "server:stop": "./scripts/stop-server.sh",
     "server:debug": "./scripts/debug-oauth.sh",
     "functions": "./scripts/start-functions.sh",
@@ -16,7 +16,7 @@
   "devDependencies": {
     "prettier": "^3.6.2",
     "turbo": "^2.5.8",
-    "typescript": "5.9.2"
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=22"

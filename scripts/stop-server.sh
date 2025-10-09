@@ -5,7 +5,7 @@ echo "🛑 Stopping Supabase Function Server"
 echo "==================================="
 
 # Kill processes on common ports
-for port in 8000 8001 8002 8003; do
+for port in 54321 54322 54323 54324; do
     pid=$(lsof -ti:$port)
     if [ ! -z "$pid" ]; then
         echo "🔄 Killing process on port $port (PID: $pid)"

@@ -31,7 +31,7 @@ echo "🚀 Starting Supabase Function Server"
 echo "=================================="
 
 # Kill any existing process on the port
-kill_port $PORT
+#kill_port $PORT
 
 # Check if port is still in use, if so find another
 if lsof -ti:$PORT > /dev/null 2>&1; then
@@ -65,11 +65,11 @@ else
     echo "✅ Using real Supabase credentials"
 fi
 
-echo "🌐 Server will start on port $PORT"
-echo "🔗 Health check: http://localhost:$PORT/health"
-echo "🔗 GitHub OAuth: http://localhost:$PORT/connect/github"
+echo "🌐 Server will start on port 54321 (Supabase default)"
+echo "🔗 Health check: http://localhost:54321/functions/v1/connect/health"
+echo "🔗 GitHub OAuth: http://localhost:54321/functions/v1/connect/github"
 echo ""
 
-# Start the server
-echo "Starting server..."
-deno run --allow-net --allow-env --allow-read --allow-write supabase/functions/connect/index.ts
+# Start the server using Supabase CLI
+echo "Starting Supabase functions server..."
+supabase functions serve --no-verify-jwt --env-file .env
