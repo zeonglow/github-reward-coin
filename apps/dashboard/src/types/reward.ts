@@ -11,11 +11,12 @@ export interface RewardActivity {
   description: string;
   repository?: string;
   ticketId?: string;
+  count: number;
   points: number;
 }
 
 export interface Reward {
-  id: string;
+  id: number;
   developerId: string;
   developer: Developer;
   activities: RewardActivity[];
@@ -33,6 +34,7 @@ export interface Reward {
     approvedAt: Date;
     comment?: string;
   };
+  period: string;
   createdAt: Date;
   updatedAt: Date;
 }

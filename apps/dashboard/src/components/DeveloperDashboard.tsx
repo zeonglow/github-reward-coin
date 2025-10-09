@@ -7,6 +7,7 @@ import { Progress } from './ui/progress';
 import { Coins, TrendingUp, Clock, CheckCircle, Copy } from 'lucide-react';
 import { Button } from './ui/button';
 import { toast } from 'sonner@2.0.3';
+import React from 'react';
 
 interface DeveloperDashboardProps {
   developer: Developer;
@@ -28,7 +29,7 @@ export function DeveloperDashboard({ developer, rewards }: DeveloperDashboardPro
       .filter(r => {
         const rewardDate = new Date(r.createdAt);
         const now = new Date();
-        return rewardDate.getMonth() === now.getMonth() && 
+        return rewardDate.getMonth() === now.getMonth() &&
                rewardDate.getFullYear() === now.getFullYear() &&
                r.status === 'distributed';
       })
@@ -76,8 +77,8 @@ export function DeveloperDashboard({ developer, rewards }: DeveloperDashboardPro
             <code className="text-xs bg-muted px-2 py-1 rounded flex-1">
               {developer.walletAddress}
             </code>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={copyWalletAddress}
             >
@@ -145,8 +146,8 @@ export function DeveloperDashboard({ developer, rewards }: DeveloperDashboardPro
               <span>Rewards Earned vs Pending</span>
               <span>{stats.totalRewardsReceived} / {stats.totalRewardsReceived + stats.totalPendingRewards} CKC</span>
             </div>
-            <Progress 
-              value={stats.totalRewardsReceived / (stats.totalRewardsReceived + stats.totalPendingRewards) * 100} 
+            <Progress
+              value={stats.totalRewardsReceived / (stats.totalRewardsReceived + stats.totalPendingRewards) * 100}
               className="w-full"
             />
           </div>

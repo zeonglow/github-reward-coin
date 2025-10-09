@@ -4,10 +4,11 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Calendar, GitCommit, GitPullRequest, Ticket, Coins, CheckCircle, Clock, User } from 'lucide-react';
+import React from 'react';
 
 interface RewardCardProps {
   reward: Reward;
-  onApprove?: (rewardId: string, type: 'manager' | 'hr', comment?: string) => void;
+  onApprove?: (rewardId: number, role: 'manager' | 'hr', comment?: string) => void;
   showActions?: boolean;
   userRole?: 'manager' | 'hr' | 'developer';
 }
@@ -67,7 +68,7 @@ export function RewardCard({ reward, onApprove, showActions = false, userRole }:
           </div>
         </div>
       </CardHeader>
-      
+
       <CardContent>
         <div className="space-y-3">
           <div>
@@ -125,7 +126,7 @@ export function RewardCard({ reward, onApprove, showActions = false, userRole }:
           {showActions && (canApproveAsManager || canApproveAsHR) && (
             <div className="pt-3 border-t">
               {canApproveAsManager && (
-                <Button 
+                <Button
                   onClick={() => onApprove?.(reward.id, 'manager')}
                   className="w-full"
                 >
@@ -133,7 +134,7 @@ export function RewardCard({ reward, onApprove, showActions = false, userRole }:
                 </Button>
               )}
               {canApproveAsHR && (
-                <Button 
+                <Button
                   onClick={() => onApprove?.(reward.id, 'hr')}
                   className="w-full"
                 >
