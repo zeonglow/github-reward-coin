@@ -72,6 +72,7 @@ interface GithubPushEvent {
   commits: Array<{
     id: string;
     message: string;
+    committer: { username: string };
   }>;
   repository: {
     full_name: string;
@@ -372,7 +373,10 @@ app.post("/connect/github/webhook/push", async (c: Context) => {
 
         const data = (await commitRes.json()) as CommitResponse;
         const username =
-          data.author?.login || data.commit?.author?.name || "unknown";
+          commit?.committer?.username ||
+          data.author?.login ||
+          data.commit?.author?.name ||
+          "unknown";
 
         const additions =
           data.files?.reduce(

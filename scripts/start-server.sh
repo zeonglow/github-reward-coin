@@ -70,6 +70,6 @@ echo "🔗 Health check: http://localhost:54321/functions/v1/connect/health"
 echo "🔗 GitHub OAuth: http://localhost:54321/functions/v1/connect/github"
 echo ""
 
-# Start the server using Supabase CLI
-echo "Starting Supabase functions server..."
-supabase functions serve --no-verify-jwt --env-file .env
+# Start the server
+echo "Starting server..."
+deno run --allow-net --allow-env --allow-read --allow-write supabase/functions/connect/index.ts
