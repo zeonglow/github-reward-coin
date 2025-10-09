@@ -472,10 +472,53 @@ const DeveloperDashboard = ({
   if (isLoading) {
     return (
       <div className="p-6 space-y-6">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading your rewards...</p>
+        {/* Header skeleton */}
+        <div className="flex justify-between items-center">
+          <div className="space-y-2">
+            <div className="h-8 w-64 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-4 w-48 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-3 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-5 w-5 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* Statistics cards skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white p-4 rounded-lg border">
+              <div className="flex items-center gap-2">
+                <div className="h-5 w-5 bg-gray-200 rounded animate-pulse"></div>
+                <div className="space-y-2">
+                  <div className="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Table skeleton */}
+        <div className="bg-white rounded-lg border">
+          <div className="p-4 border-b">
+            <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="p-4 space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between">
+                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                <div className="flex gap-2">
+                  <div className="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-6 w-16 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+                <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -785,13 +828,23 @@ export default function App() {
                   </Button>
                 </div>
               ) : (
-                <Badge
-                  variant="secondary"
-                  className="bg-yellow-100 text-yellow-800"
-                >
-                  <Clock className="w-3 h-3 mr-1" />
-                  Not Connected
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant="secondary"
+                    className="bg-yellow-100 text-yellow-800"
+                  >
+                    <Clock className="w-3 h-3 mr-1" />
+                    Not Connected
+                  </Badge>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleConnectGithub}
+                    className="bg-black-600 hover:bg-gray-700"
+                  >
+                    Connect GitHub
+                  </Button>
+                </div>
               )}
             </div>
           </div>
