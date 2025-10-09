@@ -9,7 +9,7 @@ describe("MyToken", function () {
     const [deployer] = await ethers.getSigners();
     const initial = 100_000_000n * 10n ** 18n;
 
-    const Token = await ethers.getContractFactory("CodeKudosToken");
+    const Token = await ethers.getContractFactory("CodeKudosCoin");
     const token = await Token.deploy(initial);
     await token.waitForDeployment();
 

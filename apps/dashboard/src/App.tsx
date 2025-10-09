@@ -260,6 +260,39 @@ const ManagerDashboard = () => {
       });
   }, []);
 
+  const sendTokenReward = async (
+    rewardId: number,
+    to: string,
+    amount: string,
+  ) => {
+    try {
+      // Check if user is already connected by calling the connect endpoint
+      const serverUrl =
+        (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:54321";
+      const url =
+        serverUrl === "http://localhost:8000"
+          ? new URL(`${serverUrl}/connect/reward`)
+          : new URL(`${serverUrl}/functions/v1/connect/reward`);
+      const response = await fetch(url.toString(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ rewardId, to, amount: String(amount) }),
+      });
+
+      if (response.ok) {
+        // Handle successful response
+        const { status } = await response.json();
+        if (status === "success") {
+          toast.success("Token reward sent successfully");
+        }
+      }
+    } catch (error) {
+      console.error("Error sending token reward:", error);
+    }
+  };
+
   const handleApprove = async (rewardId: number, role: string) => {
     const {
       data: [updatedReward],
@@ -288,6 +321,20 @@ const ManagerDashboard = () => {
     toast.success(
       `Reward approved by ${role === "manager" ? "Manager" : "HR Manager"}`,
     );
+
+    // if both approvals are done, update status to fully_approved
+    const reward = { ...updatedReward };
+    if (reward.managerApproval?.approved && reward.hrApproval?.approved) {
+      // fully approve the reward
+      await supabase
+        .from("rewards")
+        .update({ status: "fully_approved" })
+        .eq("id", reward.id);
+
+      // send token to developer's wallet
+      await sendTokenReward(reward.id, reward.developerId, reward.totalTokens);
+      toast.success("Tokens distributed to developer's wallet");
+    }
   };
 
   const filteredRewards = rewards.filter((reward) => {
@@ -452,7 +499,11 @@ export default function App() {
         // Check if user is already connected by calling the connect endpoint
         const serverUrl =
           (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:54321";
-        const response = await fetch(`${serverUrl}/functions/v1/connect`, {
+        const url =
+          serverUrl === "http://localhost:8000"
+            ? new URL(`${serverUrl}/connect`)
+            : new URL(`${serverUrl}/functions/v1/connect`);
+        const response = await fetch(url.toString(), {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -538,7 +589,12 @@ export default function App() {
     // Redirect to server-side GitHub OAuth endpoint
     const serverUrl =
       (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:54321";
-    window.location.href = `${serverUrl}/functions/v1/connect/github`;
+    console.log("Redirecting to GitHub OAuth at:", serverUrl);
+    const url =
+      serverUrl === "http://localhost:8000"
+        ? new URL(`${serverUrl}/connect`)
+        : new URL(`${serverUrl}/functions/v1/connect`);
+    window.location.href = `${url}/github`;
   };
 
   const handleDisconnectGithub = () => {
