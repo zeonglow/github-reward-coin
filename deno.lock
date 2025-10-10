@@ -83,6 +83,7 @@
     "npm:input-otp@^1.4.2": "1.4.2_react@18.3.1_react-dom@18.3.1__react@18.3.1",
     "npm:lucide-react@0.487": "0.487.0_react@18.3.1",
     "npm:mocha@^11.7.4": "11.7.4",
+    "npm:motion@^12.23.22": "12.23.22_react@18.3.1_react-dom@18.3.1__react@18.3.1",
     "npm:next-themes@~0.4.6": "0.4.6_react@18.3.1_react-dom@18.3.1__react@18.3.1",
     "npm:next@^15.5.0": "15.5.4_react@18.3.1_react-dom@18.3.1__react@18.3.1",
     "npm:prettier@^3.6.2": "3.6.2",
@@ -3636,6 +3637,20 @@
     "forwarded@0.2.0": {
       "integrity": "sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow=="
     },
+    "framer-motion@12.23.22_react@18.3.1_react-dom@18.3.1__react@18.3.1": {
+      "integrity": "sha512-ZgGvdxXCw55ZYvhoZChTlG6pUuehecgvEAJz0BHoC5pQKW1EC5xf1Mul1ej5+ai+pVY0pylyFfdl45qnM1/GsA==",
+      "dependencies": [
+        "motion-dom",
+        "motion-utils",
+        "react@18.3.1",
+        "react-dom@18.3.1_react@18.3.1",
+        "tslib@2.8.1"
+      ],
+      "optionalPeers": [
+        "react@18.3.1",
+        "react-dom@18.3.1_react@18.3.1"
+      ]
+    },
     "fresh@2.0.0": {
       "integrity": "sha512-Rx/WycZ60HOaqLKAi6cHRKKI7zxWbJ31MhntmtwMoaTeF7XFH9hhBp8vITaMidfljRQ6eYWCKkaTK+ykVJHP2A=="
     },
@@ -4357,6 +4372,28 @@
         "yargs-unparser"
       ],
       "bin": true
+    },
+    "motion-dom@12.23.21": {
+      "integrity": "sha512-5xDXx/AbhrfgsQmSE7YESMn4Dpo6x5/DTZ4Iyy4xqDvVHWvFVoV+V2Ri2S/ksx+D40wrZ7gPYiMWshkdoqNgNQ==",
+      "dependencies": [
+        "motion-utils"
+      ]
+    },
+    "motion-utils@12.23.6": {
+      "integrity": "sha512-eAWoPgr4eFEOFfg2WjIsMoqJTW6Z8MTUCgn/GZ3VRpClWBdnbjryiA3ZSNLyxCTmCQx4RmYX6jX1iWHbenUPNQ=="
+    },
+    "motion@12.23.22_react@18.3.1_react-dom@18.3.1__react@18.3.1": {
+      "integrity": "sha512-iSq6X9vLHbeYwmHvhK//+U74ROaPnZmBuy60XZzqNl0QtZkWfoZyMDHYnpKuWFv0sNMqHgED8aCXk94LCoQPGg==",
+      "dependencies": [
+        "framer-motion",
+        "react@18.3.1",
+        "react-dom@18.3.1_react@18.3.1",
+        "tslib@2.8.1"
+      ],
+      "optionalPeers": [
+        "react@18.3.1",
+        "react-dom@18.3.1_react@18.3.1"
+      ]
     },
     "ms@2.1.3": {
       "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA=="
@@ -5987,6 +6024,7 @@
             "npm:hono@*",
             "npm:input-otp@^1.4.2",
             "npm:lucide-react@0.487",
+            "npm:motion@^12.23.22",
             "npm:next-themes@~0.4.6",
             "npm:react-day-picker@^8.10.1",
             "npm:react-dom@^18.3.1",

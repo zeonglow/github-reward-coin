@@ -20,7 +20,9 @@ export async function giveReward(to: string, amountTokens: string | number) {
   const tokenContractAddress = Deno.env.get("KUDOS_TOKEN_CONTRACT_ADDRESS");
 
   if (!rpc || !privateKey || !tokenContractAddress) {
-    throw new Error("Missing required env vars for token transfer (SEPOLIA_RPC_URL, PRIVATE_KEY, KUDOS_TOKEN_CONTRACT_ADDRESS)");
+    throw new Error(
+      "Missing required env vars for token transfer (SEPOLIA_RPC_URL, PRIVATE_KEY, KUDOS_TOKEN_CONTRACT_ADDRESS)",
+    );
   }
 
   const provider = new ethers.JsonRpcProvider(rpc);
@@ -31,7 +33,5 @@ export async function giveReward(to: string, amountTokens: string | number) {
   const amount = ethers.parseUnits(String(amountTokens), DECIMALS);
 
   const tx = await contract.transfer(to, amount);
-  // Wait for one confirmation
-  const receipt = await tx.wait();
-  return { tx, receipt };
+  return { tx };
 }

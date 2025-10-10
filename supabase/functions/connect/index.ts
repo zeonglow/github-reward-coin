@@ -525,19 +525,34 @@ app.post("/connect/reward", async (c: Context) => {
     }
 
     // sendTokenReward expects (to, amountTokens) where amountTokens is string|number
-    const result = await sendTokenReward(
+    const { tx } = await sendTokenReward(
       user.wallet_address,
       txRequest.amount.toString(),
     );
-
-    if (!result) {
+    if (!tx || !tx.hash) {
       console.error("Token reward dispatch failed");
       return c.json({ error: "Failed to dispatch token reward" }, 500);
     }
 
+    const txStatus = await fetch(
+      `https://api.etherscan.io/v2/api?chainid=1&module=transaction&action=getstatus&txhash=${tx.hash}&apikey=${Deno.env.get("ETHERSCAN_API_KEY")}`,
+    );
+    const txStatusData = await txStatus.json();
+
+    // Update reward status to 'distributed' and save tx hash
+    let transactionStatus = "pending";
+    if (txStatusData.status === "0") transactionStatus = "failed";
+    else if (txStatusData.status === "1") transactionStatus = "success";
+
     const { error: updateError } = await supabase
       .from("rewards")
-      .update({ status: "distributed" })
+      .update({
+        status:
+          transactionStatus === "success" ? "distributed" : "fully_approved",
+        transaction_hash: tx.hash,
+        transaction_status: transactionStatus,
+        updatedAt: new Date(),
+      })
       .eq("id", txRequest.rewardId);
     if (updateError) {
       console.error(
@@ -550,8 +565,8 @@ app.post("/connect/reward", async (c: Context) => {
       to: user.wallet_address,
       amount: txRequest.amount.toString(),
       timestamp: new Date().toISOString(),
-      status: result ? "success" : "error",
-      details: result,
+      status: tx ? "success" : "error",
+      details: tx,
     });
   } catch (err) {
     console.error("/connect/reward error:", err);
