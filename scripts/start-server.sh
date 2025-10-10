@@ -54,6 +54,7 @@ export VITE_SERVER_URL="${VITE_SERVER_URL:-http://localhost:8000}"
 export SEPOLIA_RPC_URL="${SEPOLIA_RPC_URL:-https://eth-sepolia.g.alchemy.com/v2/qwTQJlI_ikPCGi1V5xolw}"
 export PRIVATE_KEY="${PRIVATE_KEY:-4813ed4a8cd20a820f27022d8fadd80c91697430896b03b42edd4245e3954fc5}"
 export KUDOS_TOKEN_CONTRACT_ADDRESS="${KUDOS_TOKEN_CONTRACT_ADDRESS:-0x8490a7b3800Cd46F3cB68E6e451FFbd8a7AdC6Ef}"
+export ETHERSCAN_API_KEY="${ETHERSCAN_API_KEY:-B67Y8N6VB1ZHZT6RNQ6BHTJY3TI35XXKVA}"
 
 # Check if using placeholder values
 if [[ "$SUPABASE_URL" == "https://example.supabase.co" ]]; then
