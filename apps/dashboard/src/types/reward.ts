@@ -36,6 +36,7 @@ export interface Reward {
     comment?: string;
   };
   period?: string;
+  transaction_hash?: string;
   createdAt: Date;
   updatedAt: Date;
 }
