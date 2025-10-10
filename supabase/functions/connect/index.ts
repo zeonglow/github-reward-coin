@@ -550,7 +550,6 @@ app.post("/connect/reward", async (c: Context) => {
         status:
           transactionStatus === "success" ? "distributed" : "fully_approved",
         transaction_hash: tx.hash,
-        transaction_status: transactionStatus,
         updatedAt: new Date(),
       })
       .eq("id", txRequest.rewardId);

@@ -383,6 +383,7 @@ export function DeveloperDashboard({
                   <TableHead>Tokens</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead>Transaction Hash</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -448,6 +449,20 @@ export function DeveloperDashboard({
                       {reward.status === "distributed"
                         ? new Date(reward.updatedAt).toLocaleDateString()
                         : new Date(reward.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {reward.transaction_hash ? (
+                        <a
+                          href={`https://sepolia.etherscan.io/tx/${reward.transaction_hash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          {`${reward.transaction_hash.slice(0, 6)}...${reward.transaction_hash.slice(-4)}`}
+                        </a>
+                      ) : (
+                        <span className="text-muted-foreground">N/A</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
